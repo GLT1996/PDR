@@ -234,39 +234,87 @@ class TrajectoryView @JvmOverloads constructor(
     private fun drawPointsInScreenSpace(canvas: Canvas) {
         if (trajectoryPoints.isEmpty()) return
 
-        val pointRadius = 12f  // 屏幕像素
-
         // 起点
         val startPoint = trajectoryPoints.first()
-        // Y轴已在canvas变换中翻转，所以这里用加号
         val startScreenX = offsetX + startPoint.x * scale
         val startScreenY = offsetY - startPoint.y * scale
-        canvas.drawCircle(startScreenX, startScreenY, pointRadius, startPointPaint)
+        canvas.drawCircle(startScreenX, startScreenY, 12f, startPointPaint)
 
-        // 终点
+        // 终点（小人图标）
         val endPoint = trajectoryPoints.last()
         val endScreenX = offsetX + endPoint.x * scale
         val endScreenY = offsetY - endPoint.y * scale
-        canvas.drawCircle(endScreenX, endScreenY, pointRadius, endPointPaint)
+        drawPerson(canvas, endScreenX, endScreenY, endPoint.heading)
+    }
 
-        // 方向指示箭头（指向行进方向）
-        if (trajectoryPoints.size > 1) {
-            val heading = endPoint.heading
-            val arrowLength = 25f  // 屏幕像素
+    /**
+     * 绘制小人图标
+     * @param canvas 画布
+     * @param x 屏幕X坐标
+     * @param y 屏幕Y坐标
+     * @param heading 航向角（弧度）
+     */
+    private fun drawPerson(canvas: Canvas, x: Float, y: Float, heading: Float) {
+        canvas.save()
+        canvas.translate(x, y)
+        // 旋转：heading 是从北（上）顺时针的角度，需要转换为屏幕旋转角度
+        // 屏幕坐标系：向上是负Y，所以旋转角度需要取负
+        canvas.rotate(-Math.toDegrees(heading.toDouble()).toFloat())
 
-            // 箭头指向heading方向（北为0，顺时针增加）
-            val arrowEndX = endScreenX + arrowLength * kotlin.math.sin(heading)
-            val arrowEndY = endScreenY - arrowLength * kotlin.math.cos(heading)
-
-            val arrowPaint = Paint().apply {
-                color = Color.parseColor("#FF9800")
-                strokeWidth = 4f
-                style = Paint.Style.STROKE
-                strokeCap = Paint.Cap.ROUND
-                isAntiAlias = true
-            }
-            canvas.drawLine(endScreenX, endScreenY, arrowEndX, arrowEndY, arrowPaint)
+        val personPaint = Paint().apply {
+            color = Color.parseColor("#FF9800")  // 橙色
+            style = Paint.Style.FILL
+            isAntiAlias = true
         }
+
+        val strokePaint = Paint().apply {
+            color = Color.parseColor("#FF9800")
+            strokeWidth = 4f
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            isAntiAlias = true
+        }
+
+        // 小人尺寸（屏幕像素）
+        val headRadius = 8f
+        val bodyLength = 20f
+        val armLength = 12f
+        val legLength = 14f
+
+        // 头（圆形）
+        canvas.drawCircle(0f, -bodyLength - headRadius, headRadius, personPaint)
+
+        // 身体（线）
+        canvas.drawLine(0f, -bodyLength, 0f, 0f, strokePaint)
+
+        // 手臂（横线）
+        canvas.drawLine(-armLength, -bodyLength + 5f, armLength, -bodyLength + 5f, strokePaint)
+
+        // 腿（两条）
+        canvas.drawLine(0f, 0f, -8f, legLength, strokePaint)
+        canvas.drawLine(0f, 0f, 8f, legLength, strokePaint)
+
+        // 方向指示（前进方向的箭头）
+        val arrowPaint = Paint().apply {
+            color = Color.parseColor("#4CAF50")  // 绿色
+            strokeWidth = 3f
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            isAntiAlias = true
+        }
+
+        val arrowLength = 25f
+        val arrowWidth = 8f
+
+        // 箭头路径
+        val arrowPath = Path()
+        arrowPath.moveTo(0f, -bodyLength - headRadius * 2 - 5f)  // 箭头尖端
+        arrowPath.lineTo(-arrowWidth, -bodyLength - headRadius * 2 - 5f - arrowLength)  // 左边
+        arrowPath.moveTo(0f, -bodyLength - headRadius * 2 - 5f)  // 回到尖端
+        arrowPath.lineTo(arrowWidth, -bodyLength - headRadius * 2 - 5f - arrowLength)  // 右边
+        canvas.drawPath(arrowPath, arrowPaint)
+
+        canvas.restore()
     }
 
     private fun drawInfo(canvas: Canvas) {
