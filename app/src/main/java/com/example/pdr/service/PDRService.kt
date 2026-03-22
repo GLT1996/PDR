@@ -167,6 +167,9 @@ class PDRService : Service() {
     }
 
     private fun startSensorTracking() {
+        // 先取消之前的传感器监听
+        stopSensorTracking()
+
         pdrRepository?.startRecording(currentTrajectoryId)
 
         sensorJob = serviceScope.launch {

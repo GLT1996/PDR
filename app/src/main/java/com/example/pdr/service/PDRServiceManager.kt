@@ -81,11 +81,21 @@ class PDRServiceManager(private val context: Context) {
             putExtra(PDRService.EXTRA_TRAJECTORY_ID, trajectoryId)
         }
 
-        // 启动前台服务
+        // 启动前台服务（会触发 startTracking）
         context.startForegroundService(intent)
 
         // 如果服务已经绑定，直接执行回调
         if (isBound && service != null) {
+            // 更新服务的监听器
+            service?.setOnPositionUpdateListener { point ->
+                _currentSteps.value = service?.getTotalSteps() ?: 0
+                _currentDistance.value = service?.getTotalDistance() ?: 0f
+                _currentDuration.value = service?.getDuration() ?: 0
+                externalPositionListener?.invoke(point)
+            }
+            service?.setOnSensorUpdateListener { sensorData ->
+                externalSensorListener?.invoke(sensorData)
+            }
             onServiceConnectedCallback?.invoke()
         } else {
             // 绑定服务
