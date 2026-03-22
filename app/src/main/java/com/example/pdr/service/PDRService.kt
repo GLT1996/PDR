@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.pdr.MainActivity
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 class PDRService : Service() {
 
     companion object {
+        private const val TAG = "PDRService"
         const val CHANNEL_ID = "pdr_service_channel"
         const val NOTIFICATION_ID = 1001
 
@@ -68,15 +70,18 @@ class PDRService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "onCreate: 服务创建")
         createNotificationChannel()
         initRepository()
     }
 
     override fun onBind(intent: Intent?): IBinder {
+        Log.d(TAG, "onBind: 服务绑定")
         return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand: action=${intent?.action}")
         when (intent?.action) {
             ACTION_START -> {
                 val trajectoryId = intent.getLongExtra(EXTRA_TRAJECTORY_ID, 0)
@@ -148,6 +153,10 @@ class PDRService : Service() {
         isRecording = true
         isRunning = true
 
+        // 重置状态（清除上次的轨迹数据）
+        pdrRepository?.resetPosition()
+        Log.d(TAG, "startTracking: 已重置位置状态")
+
         // 启动前台服务
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ServiceCompat.startForeground(
@@ -165,25 +174,33 @@ class PDRService : Service() {
     }
 
     private fun startSensorTracking() {
+        Log.d(TAG, "startSensorTracking: 开始传感器追踪")
         pdrRepository?.startRecording(currentTrajectoryId)
 
         sensorJob = serviceScope.launch {
+            Log.d(TAG, "传感器Flow启动")
+
             pdrRepository?.getSensorDataStream()
                 ?.onEach { sensorData ->
+                    // 每秒输出一次日志
+                    if (sensorData.timestamp % 1_000_000_000 < 50_000_000) {
+                        Log.d(TAG, "传感器数据: accel=${String.format("%.2f", sensorData.accelerationMagnitude)}")
+                    }
                     onSensorUpdate?.invoke(sensorData)
                 }
-                ?.catch { _ ->
-                    // 忽略错误，继续处理
+                ?.catch { e ->
+                    Log.e(TAG, "传感器数据流错误: ${e.message}")
                 }
                 ?.launchIn(this)
 
             pdrRepository?.getPositionUpdates()
                 ?.onEach { point ->
+                    Log.d(TAG, "检测到步伐: 步数=${point.stepCount}, 位置=(${String.format("%.2f", point.x)}, ${String.format("%.2f", point.y)})")
                     onPositionUpdate?.invoke(point)
                     updateNotification()
                 }
-                ?.catch { _ ->
-                    // 忽略错误，继续处理
+                ?.catch { e ->
+                    Log.e(TAG, "位置更新流错误: ${e.message}")
                 }
                 ?.launchIn(this)
         }
@@ -252,5 +269,10 @@ class PDRService : Service() {
 
     fun calibrateHeading() {
         pdrRepository?.calibrateHeading()
+    }
+
+    fun resetPosition() {
+        pdrRepository?.resetPosition()
+        Log.d(TAG, "resetPosition: 位置已重置")
     }
 }

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.example.pdr.R
 import com.example.pdr.databinding.FragmentMainBinding
 
@@ -47,6 +48,7 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupViews()
         observeViewModel()
+        handleNavigationArgs()
     }
 
     private fun setupViews() {
@@ -61,6 +63,10 @@ class MainFragment : Fragment() {
         binding.btnCalibrate.setOnClickListener {
             viewModel.calibrateHeading()
             Toast.makeText(requireContext(), "方向已校准", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnHistory.setOnClickListener {
+            findNavController().navigate(R.id.action_main_to_history)
         }
     }
 
@@ -102,6 +108,16 @@ class MainFragment : Fragment() {
             if (missingSensors.isNotEmpty()) {
                 binding.textStatus.text = "缺少传感器: ${missingSensors.joinToString(", ")}"
             }
+        }
+    }
+
+    private fun handleNavigationArgs() {
+        // 处理从历史记录页面返回时加载轨迹
+        val trajectoryId = arguments?.getLong("trajectoryId", 0L) ?: 0L
+        if (trajectoryId > 0) {
+            viewModel.loadTrajectory(trajectoryId)
+            // 清除参数避免重复加载
+            arguments?.clear()
         }
     }
 

@@ -104,13 +104,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startRecording() {
         if (_isRecording.value == true) return
 
-        // 重置状态
-        pdrRepository.resetPosition()
+        // 重置UI状态
         _trajectoryPoints.value = emptyList()
         _totalSteps.value = 0
         _totalDistance.value = 0f
+        _duration.value = 0L
 
-        // 启动前台服务
+        // 启动前台服务（服务会在startTracking中自动重置位置）
         serviceManager.startAndBind(currentTrajectoryId)
 
         // 设置更新监听
@@ -152,10 +152,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val points = serviceManager.getTrajectoryPoints()
             if (points.isEmpty()) return@launch
 
+            val now = System.currentTimeMillis()
             val trajectory = Trajectory(
-                name = "轨迹_${System.currentTimeMillis()}",
-                startTime = points.first().timestamp,
-                endTime = points.last().timestamp,
+                name = "轨迹_${java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
+                startTime = now,
+                endTime = now,
                 totalSteps = _totalSteps.value ?: 0,
                 totalDistance = _totalDistance.value ?: 0f
             )
@@ -181,10 +182,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 清除当前轨迹
      */
     fun clearTrajectory() {
-        pdrRepository.resetPosition()
+        serviceManager.resetPosition()
         _trajectoryPoints.value = emptyList()
         _totalSteps.value = 0
         _totalDistance.value = 0f
+        _duration.value = 0L
         _currentPosition.value = Pair(0f, 0f)
         _statusMessage.value = "轨迹已清除"
     }

@@ -7,6 +7,23 @@
     <fragment
         android:id="@+id/mainFragment"
         android:name="com.example.pdr.ui.main.MainFragment"
-        android:label="Main" />
+        android:label="Main">
+        <argument
+            android:name="trajectoryId"
+            android:defaultValue="0L"
+            app:argType="long" />
+        <action
+            android:id="@+id/action_main_to_history"
+            app:destination="@id/historyFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.example.pdr.ui.history.HistoryFragment"
+        android:label="历史轨迹">
+        <action
+            android:id="@+id/action_history_to_main"
+            app:destination="@id/mainFragment" />
+    </fragment>
 
 </navigation>

@@ -2,8 +2,6 @@ package com.example.pdr.domain.algorithm
 
 import com.example.pdr.data.model.SensorData
 import com.example.pdr.data.model.TrajectoryPoint
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 /**
  * 位置计算器
@@ -41,17 +39,17 @@ class PositionCalculator {
         val heading = headingEstimator.process(sensorData)
 
         // 检测步伐
-        val stepDetected = stepDetector.process(sensorData)
+        val stepResult = stepDetector.process(sensorData)
 
-        if (stepDetected) {
+        if (stepResult != null) {
             // 估计步长
             val stepLength = stepLengthEstimator.estimate(
                 sensorData.accelerationMagnitude,
                 sensorData.timestamp
             )
 
-            // 更新位置
-            updatePosition(stepLength, heading)
+            // 更新位置（使用方向）
+            updatePosition(stepLength, heading, stepResult.direction)
 
             // 创建轨迹点
             val point = TrajectoryPoint(
@@ -73,11 +71,16 @@ class PositionCalculator {
     /**
      * 更新位置坐标
      */
-    private fun updatePosition(stepLength: Float, heading: Float) {
-        // 使用航向角计算位移增量
-        // heading: 正东为0，正北为π/2，正西为π，正南为-π/2
-        val dx = stepLength * kotlin.math.sin(heading)
-        val dy = stepLength * kotlin.math.cos(heading)
+    private fun updatePosition(stepLength: Float, heading: Float, direction: Int) {
+        // Android方位角定义：正北为0，顺时针增加
+        // 东 = π/2, 南 = π, 西 = -π/2
+        //
+        // direction: 1=前进, -1=后退
+
+        val effectiveStepLength = stepLength * direction
+
+        val dx = effectiveStepLength * kotlin.math.sin(heading)   // 东（右）为正
+        val dy = effectiveStepLength * kotlin.math.cos(heading)   // 北（上）为正
 
         currentX += dx
         currentY += dy

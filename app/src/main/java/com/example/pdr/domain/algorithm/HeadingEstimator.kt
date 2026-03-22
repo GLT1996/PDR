@@ -68,7 +68,10 @@ class HeadingEstimator {
         val dt = (timestamp - lastTimestamp) / 1_000_000_000f  // 转换为秒
 
         // 陀螺仪z轴角速度积分（绕垂直轴旋转）
-        gyroHeading += gyro[2] * dt
+        // 注意：Android陀螺仪Z轴旋转正方向是逆时针（从Z轴正向看）
+        // 而我们定义的航向正方向是顺时针（东为正角度变化）
+        // 所以需要取反
+        gyroHeading -= gyro[2] * dt
 
         // 归一化到 [-π, π]
         gyroHeading = normalizeAngle(gyroHeading)
