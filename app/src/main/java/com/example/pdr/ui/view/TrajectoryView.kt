@@ -70,8 +70,8 @@ class TrajectoryView @JvmOverloads constructor(
     private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
     private val gestureDetector = GestureDetector(context, GestureListener())
 
-    // 自动居中
-    private var autoCenter = true
+    // 自动跟随当前点
+    private var followCurrentPoint = true
 
     // 坐标范围（米）
     private var minX = Float.MAX_VALUE
@@ -83,7 +83,7 @@ class TrajectoryView @JvmOverloads constructor(
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             val scaleFactor = detector.scaleFactor
             scale = (scale * scaleFactor).coerceIn(minScale, maxScale)
-            autoCenter = false
+            followCurrentPoint = false
             invalidate()
             return true
         }
@@ -98,7 +98,7 @@ class TrajectoryView @JvmOverloads constructor(
         ): Boolean {
             offsetX -= distanceX
             offsetY -= distanceY
-            autoCenter = false
+            followCurrentPoint = false
             invalidate()
             return true
         }
@@ -129,26 +129,12 @@ class TrajectoryView @JvmOverloads constructor(
         val centerX = width / 2f
         val centerY = height / 2f
 
-        if (autoCenter) {
-            // 自动居中模式
-            val dataCenterX = (minX + maxX) / 2
-            val dataCenterY = (minY + maxY) / 2
-
-            // 计算自适应缩放
-            val dataWidth = maxX - minX
-            val dataHeight = maxY - minY
-            val viewWidth = width - 100f
-            val viewHeight = height - 100f
-
-            // 只有当数据范围足够大时才自动缩放
-            if (dataWidth > 0.1f && dataHeight > 0.1f) {
-                val autoScale = min(viewWidth / dataWidth, viewHeight / dataHeight)
-                scale = autoScale.coerceIn(minScale, maxScale)
-            }
-
-            offsetX = centerX - dataCenterX * scale
+        if (followCurrentPoint) {
+            // 跟随当前点模式：让当前位置始终在屏幕中心
+            val currentPoint = trajectoryPoints.last()
+            offsetX = centerX - currentPoint.x * scale
             // Y轴翻转：数据Y向上，屏幕Y向下
-            offsetY = centerY + dataCenterY * scale
+            offsetY = centerY + currentPoint.y * scale
         }
 
         // 应用变换：先平移，再缩放
@@ -362,6 +348,7 @@ class TrajectoryView @JvmOverloads constructor(
         trajectoryPoints.clear()
         trajectoryPoints.addAll(points)
         updateAllBounds()
+        followCurrentPoint = true  // 设置新点时启用跟随模式
         invalidate()
     }
 
@@ -371,6 +358,7 @@ class TrajectoryView @JvmOverloads constructor(
     fun clear() {
         trajectoryPoints.clear()
         resetBounds()
+        followCurrentPoint = true
         invalidate()
     }
 
@@ -398,7 +386,7 @@ class TrajectoryView @JvmOverloads constructor(
      */
     fun resetView() {
         scale = 50f
-        autoCenter = true
+        followCurrentPoint = true
         invalidate()
     }
 
