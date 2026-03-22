@@ -78,7 +78,8 @@ class HistoryFragment : Fragment() {
         adapter = TrajectoryAdapter(
             onItemClick = { trajectory -> onTrajectoryClick(trajectory) },
             onDeleteClick = { trajectory -> showDeleteConfirmDialog(trajectory) },
-            onSelectionModeChanged = { isInSelectionMode -> updateSelectionModeUI(isInSelectionMode) }
+            onSelectionModeChanged = { isInSelectionMode -> updateSelectionModeUI(isInSelectionMode) },
+            onSelectionCountChanged = { count -> updateSelectionCountText(count) }
         )
 
         recyclerView.apply {
@@ -98,7 +99,6 @@ class HistoryFragment : Fragment() {
 
         btnSelectAll.setOnClickListener {
             adapter.selectAll()
-            updateSelectionCount()
         }
 
         btnDeleteSelected.setOnClickListener {
@@ -172,7 +172,6 @@ class HistoryFragment : Fragment() {
         if (isInSelectionMode) {
             normalHeader.visibility = View.GONE
             selectionHeader.visibility = View.VISIBLE
-            updateSelectionCount()
         } else {
             normalHeader.visibility = View.VISIBLE
             selectionHeader.visibility = View.GONE
@@ -180,7 +179,10 @@ class HistoryFragment : Fragment() {
     }
 
     private fun updateSelectionCount() {
-        val count = adapter.getSelectedIds().size
+        updateSelectionCountText(adapter.getSelectedIds().size)
+    }
+
+    private fun updateSelectionCountText(count: Int) {
         textSelectionCount.text = "已选择 $count 项"
     }
 }

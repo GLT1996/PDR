@@ -17,7 +17,8 @@ import com.example.pdr.data.model.Trajectory
 class TrajectoryAdapter(
     private val onItemClick: (Trajectory) -> Unit,
     private val onDeleteClick: (Trajectory) -> Unit,
-    private val onSelectionModeChanged: (Boolean) -> Unit
+    private val onSelectionModeChanged: (Boolean) -> Unit,
+    private val onSelectionCountChanged: ((Int) -> Unit)? = null
 ) : RecyclerView.Adapter<TrajectoryAdapter.TrajectoryViewHolder>() {
 
     private val items = mutableListOf<Trajectory>()
@@ -105,6 +106,7 @@ class TrajectoryAdapter(
             selectedItems.add(trajectory.id)
         }
         notifyItemChanged(items.indexOf(trajectory))
+        onSelectionCountChanged?.invoke(selectedItems.size)
 
         // 如果取消所有选择，退出选择模式
         if (selectedItems.isEmpty()) {
@@ -129,6 +131,7 @@ class TrajectoryAdapter(
         selectedItems.clear()
         selectedItems.addAll(items.map { it.id })
         notifyDataSetChanged()
+        onSelectionCountChanged?.invoke(selectedItems.size)
     }
 
     fun getSelectedIds(): List<Long> = selectedItems.toList()
