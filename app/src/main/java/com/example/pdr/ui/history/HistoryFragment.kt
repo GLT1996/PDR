@@ -9,6 +9,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -19,6 +21,7 @@ import com.example.pdr.data.model.Trajectory
 
 class HistoryFragment : Fragment() {
 
+    private lateinit var rootView: View
     private lateinit var recyclerView: RecyclerView
     private lateinit var textEmpty: TextView
     private lateinit var normalHeader: LinearLayout
@@ -37,15 +40,26 @@ class HistoryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_history, container, false)
+        rootView = inflater.inflate(R.layout.fragment_history, container, false)
+        return rootView
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupWindowInsets()
         initViews(view)
         setupRecyclerView()
         setupButtons()
         observeViewModel()
+    }
+
+    private fun setupWindowInsets() {
+        // 处理刘海屏和状态栏
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
     }
 
     private fun initViews(view: View) {
