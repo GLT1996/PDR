@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import com.example.pdr.data.model.SensorData
 import com.example.pdr.data.model.TrajectoryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +32,6 @@ class PDRServiceManager(private val context: Context) {
 
     // 外部监听器
     private var externalPositionListener: ((TrajectoryPoint) -> Unit)? = null
-    private var externalSensorListener: ((SensorData) -> Unit)? = null
 
     // 服务绑定回调
     private var onServiceConnectedCallback: (() -> Unit)? = null
@@ -50,10 +48,6 @@ class PDRServiceManager(private val context: Context) {
                 _currentDistance.value = service?.getTotalDistance() ?: 0f
                 _currentDuration.value = service?.getDuration() ?: 0
                 externalPositionListener?.invoke(point)
-            }
-
-            service?.setOnSensorUpdateListener { sensorData ->
-                externalSensorListener?.invoke(sensorData)
             }
 
             _isRunning.value = true
@@ -92,9 +86,6 @@ class PDRServiceManager(private val context: Context) {
                 _currentDistance.value = service?.getTotalDistance() ?: 0f
                 _currentDuration.value = service?.getDuration() ?: 0
                 externalPositionListener?.invoke(point)
-            }
-            service?.setOnSensorUpdateListener { sensorData ->
-                externalSensorListener?.invoke(sensorData)
             }
             onServiceConnectedCallback?.invoke()
         } else {
@@ -157,18 +148,6 @@ class PDRServiceManager(private val context: Context) {
     fun setOnPositionUpdateListener(listener: (TrajectoryPoint) -> Unit) {
         externalPositionListener = listener
     }
-
-    /**
-     * 设置传感器更新监听器
-     */
-    fun setOnSensorUpdateListener(listener: (SensorData) -> Unit) {
-        externalSensorListener = listener
-    }
-
-    /**
-     * 检查服务是否已绑定
-     */
-    fun isServiceBound(): Boolean = isBound
 
     /**
      * 获取总步数

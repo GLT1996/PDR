@@ -15,7 +15,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.pdr.MainActivity
 import com.example.pdr.R
-import com.example.pdr.data.model.SensorData
 import com.example.pdr.data.model.TrajectoryPoint
 import com.example.pdr.data.repository.PDRRepository
 import com.example.pdr.domain.sensor.SensorController
@@ -59,7 +58,6 @@ class PDRService : Service() {
 
     // 回调
     private var onPositionUpdate: ((TrajectoryPoint) -> Unit)? = null
-    private var onSensorUpdate: ((SensorData) -> Unit)? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): PDRService = this@PDRService
@@ -173,12 +171,6 @@ class PDRService : Service() {
         pdrRepository?.startRecording(currentTrajectoryId)
 
         sensorJob = serviceScope.launch {
-            pdrRepository?.getSensorDataStream()
-                ?.onEach { sensorData ->
-                    onSensorUpdate?.invoke(sensorData)
-                }
-                ?.launchIn(this)
-
             pdrRepository?.getPositionUpdates()
                 ?.onEach { point ->
                     onPositionUpdate?.invoke(point)
@@ -231,10 +223,6 @@ class PDRService : Service() {
 
     fun setOnPositionUpdateListener(listener: (TrajectoryPoint) -> Unit) {
         onPositionUpdate = listener
-    }
-
-    fun setOnSensorUpdateListener(listener: (SensorData) -> Unit) {
-        onSensorUpdate = listener
     }
 
     fun getTotalSteps(): Int = pdrRepository?.getTotalSteps() ?: 0
