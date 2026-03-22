@@ -31,12 +31,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isRecording = MutableLiveData<Boolean>()
     val isRecording: LiveData<Boolean> = _isRecording
 
-    private val _currentPosition = MutableLiveData<Pair<Float, Float>>()
-    val currentPosition: LiveData<Pair<Float, Float>> = _currentPosition
-
-    private val _currentHeading = MutableLiveData<Float>()
-    val currentHeading: LiveData<Float> = _currentHeading
-
     private val _totalSteps = MutableLiveData<Int>()
     val totalSteps: LiveData<Int> = _totalSteps
 
@@ -55,16 +49,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _sensorStatus = MutableLiveData<Map<String, Boolean>>()
     val sensorStatus: LiveData<Map<String, Boolean>> = _sensorStatus
 
-    private val _savedTrajectories = MutableLiveData<List<Trajectory>>()
-    val savedTrajectories: LiveData<List<Trajectory>> = _savedTrajectories
-
     private var currentTrajectoryId: Long = 0
 
     init {
         _isRecording.value = false
         initRepositories()
         checkSensors()
-        loadSavedTrajectories()
     }
 
     private fun initRepositories() {
@@ -83,19 +73,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _sensorStatus.value = pdrRepository.getSensorAvailability()
         if (!pdrRepository.hasRequiredSensors()) {
             _statusMessage.value = "设备缺少必要传感器"
-        }
-    }
-
-    private fun loadSavedTrajectories() {
-        viewModelScope.launch {
-            trajectoryRepository.getAllTrajectories()
-                .onEach { trajectories ->
-                    _savedTrajectories.value = trajectories
-                }
-                .catch { e ->
-                    _statusMessage.value = "加载历史轨迹失败: ${e.message}"
-                }
-                .launchIn(viewModelScope)
         }
     }
 
@@ -123,8 +100,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _totalSteps.postValue(serviceManager.getTotalSteps())
             _totalDistance.postValue(serviceManager.getTotalDistance())
             _duration.postValue(serviceManager.getDuration())
-            _currentPosition.postValue(serviceManager.getCurrentPosition())
-            _currentHeading.postValue(serviceManager.getCurrentHeading())
         }
 
         // 启动前台服务，等待绑定完成
@@ -198,7 +173,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _totalSteps.value = 0
         _totalDistance.value = 0f
         _duration.value = 0L
-        _currentPosition.value = Pair(0f, 0f)
         _statusMessage.value = "轨迹已清除"
     }
 
