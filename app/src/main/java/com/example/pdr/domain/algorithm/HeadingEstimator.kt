@@ -38,7 +38,7 @@ class HeadingEstimator {
     /**
      * 处理传感器数据，更新航向估计
      * @param sensorData 传感器数据
-     * @return 当前航向角（弧度）
+     * @return 当前航向角（弧度，已校准）
      */
     fun process(sensorData: SensorData): Float {
         val timestamp = sensorData.timestamp
@@ -53,7 +53,8 @@ class HeadingEstimator {
         fuseHeadings()
 
         lastTimestamp = timestamp
-        return currentHeading
+        // 返回校准后的航向
+        return getCalibratedHeading()
     }
 
     /**
@@ -122,9 +123,9 @@ class HeadingEstimator {
     }
 
     /**
-     * 获取当前航向（弧度）
+     * 获取当前航向（弧度，已校准）
      */
-    fun getHeading(): Float = currentHeading
+    fun getHeading(): Float = getCalibratedHeading()
 
     /**
      * 获取当前航向（度）
