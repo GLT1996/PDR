@@ -84,12 +84,17 @@ class PDRServiceManager(private val context: Context) {
         // 启动前台服务
         context.startForegroundService(intent)
 
-        // 绑定服务
-        context.bindService(
-            Intent(context, PDRService::class.java),
-            serviceConnection,
-            Context.BIND_AUTO_CREATE
-        )
+        // 如果服务已经绑定，直接执行回调
+        if (isBound && service != null) {
+            onServiceConnectedCallback?.invoke()
+        } else {
+            // 绑定服务
+            context.bindService(
+                Intent(context, PDRService::class.java),
+                serviceConnection,
+                Context.BIND_AUTO_CREATE
+            )
+        }
     }
 
     /**

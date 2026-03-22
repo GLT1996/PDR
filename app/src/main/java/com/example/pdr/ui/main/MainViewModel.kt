@@ -112,6 +112,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _duration.value = 0L
         _statusMessage.value = "正在启动..."
 
+        // 重置服务中的轨迹数据
+        serviceManager.resetPosition()
+
         // 先设置监听器
         serviceManager.setOnPositionUpdateListener { point ->
             val currentPoints = _trajectoryPoints.value?.toMutableList() ?: mutableListOf()
