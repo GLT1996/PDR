@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDR轨迹记录</string>
+    <string name="hello_world">Hello, World!</string>
+
+    <!-- 控制按钮 -->
+    <string name="start_recording">开始记录</string>
+    <string name="stop_recording">停止记录</string>
+    <string name="calibrate_direction">校准方向</string>
+
+    <!-- 统计标签 -->
+    <string name="steps">步数</string>
+    <string name="distance">距离</string>
+    <string name="duration">时长</string>
+
+    <!-- 状态信息 -->
+    <string name="ready">准备就绪</string>
+    <string name="recording">正在记录轨迹</string>
+    <string name="trajectory_saved">轨迹已保存</string>
+    <string name="calibrated">方向已校准</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_name">PDR轨迹记录</string>
+    <string name="notification_channel_description">后台持续记录行走轨迹</string>
+    <string name="notification_title">正在记录轨迹</string>
+
+    <!-- 权限相关 -->
+    <string name="permission_required">需要传感器权限才能记录轨迹</string>
+    <string name="sensor_missing">设备缺少必要传感器</string>
+</resources>
