@@ -3,25 +3,24 @@ package com.example.pdr.domain.algorithm
 import android.hardware.SensorManager
 import com.example.pdr.data.model.SensorData
 import kotlin.math.abs
-import kotlin.math.atan2
 
 /**
  * 航向估计器
- * 融合陀螺仪和磁力计数据估计行走方向
+ * 优先使用 RotationVector 传感器，不可用时回退到陀螺仪+磁力计融合
  */
 class HeadingEstimator {
 
-    // 互补滤波系数（陀螺仪权重）
+    // 互补滤波系数（陀螺仪权重）- 用于备用方案
     private val gyroWeight = 0.98f
     private val magWeight = 0.02f
 
     // 当前航向角（弧度）
     private var currentHeading = 0f
 
-    // 陀螺仪积分航向
+    // 陀螺仪积分航向（备用方案）
     private var gyroHeading = 0f
 
-    // 磁力计航向
+    // 磁力计航向（备用方案）
     private var magneticHeading = 0f
 
     // 上一次的时间戳
@@ -35,6 +34,13 @@ class HeadingEstimator {
     private var isCalibrated = false
     private var headingOffset = 0f
 
+    // 是否有 RotationVector 数据
+    private var hasRotationVector = false
+
+    // 平滑滤波
+    private val headingHistory = mutableListOf<Float>()
+    private val smoothingWindowSize = 5
+
     /**
      * 处理传感器数据，更新航向估计
      * @param sensorData 传感器数据
@@ -43,22 +49,47 @@ class HeadingEstimator {
     fun process(sensorData: SensorData): Float {
         val timestamp = sensorData.timestamp
 
-        // 更新陀螺仪航向
-        sensorData.gyroscope?.let { updateGyroHeading(it, timestamp) }
+        // 优先使用 RotationVector（Android 系统级融合，精度更高）
+        sensorData.rotationVector?.let { rv ->
+            updateHeadingFromRotationVector(rv)
+            hasRotationVector = true
+        } ?: run {
+            // 回退到陀螺仪+磁力计融合
+            hasRotationVector = false
+            sensorData.gyroscope?.let { updateGyroHeading(it, timestamp) }
+            sensorData.magneticField?.let { updateMagneticHeading(sensorData.acceleration, it) }
+            fuseHeadings()
+        }
 
-        // 更新磁力计航向
-        sensorData.magneticField?.let { updateMagneticHeading(sensorData.acceleration, it) }
-
-        // 互补滤波融合
-        fuseHeadings()
+        // 应用平滑滤波
+        applySmoothingFilter()
 
         lastTimestamp = timestamp
-        // 返回校准后的航向
         return getCalibratedHeading()
     }
 
     /**
-     * 使用陀螺仪更新航向
+     * 使用 RotationVector 计算航向
+     * RotationVector 是 Android 系统级融合的方向传感器
+     * 结合了陀螺仪、加速度计和磁力计，精度更高
+     */
+    private fun updateHeadingFromRotationVector(rotationVector: FloatArray) {
+        try {
+            // 从旋转向量获取旋转矩阵
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, rotationVector)
+
+            // 从旋转矩阵获取方向角
+            SensorManager.getOrientation(rotationMatrix, orientationAngles)
+
+            // orientationAngles[0] 是方位角（绕 Z 轴旋转，北为 0，东为 π/2）
+            currentHeading = normalizeAngle(orientationAngles[0])
+        } catch (e: Exception) {
+            // 如果 RotationVector 解析失败，保持当前航向
+        }
+    }
+
+    /**
+     * 使用陀螺仪更新航向（备用方案）
      */
     private fun updateGyroHeading(gyro: FloatArray, timestamp: Long) {
         if (lastTimestamp == 0L) {
@@ -79,7 +110,7 @@ class HeadingEstimator {
     }
 
     /**
-     * 使用磁力计更新航向
+     * 使用磁力计更新航向（备用方案）
      */
     private fun updateMagneticHeading(acceleration: FloatArray, magnetic: FloatArray) {
         // 计算设备方向
@@ -97,7 +128,7 @@ class HeadingEstimator {
     }
 
     /**
-     * 互补滤波融合陀螺仪和磁力计航向
+     * 互补滤波融合陀螺仪和磁力计航向（备用方案）
      */
     private fun fuseHeadings() {
         // 处理角度跳变问题（例如从179度到-179度）
@@ -110,6 +141,27 @@ class HeadingEstimator {
         // 缓慢校正陀螺仪漂移
         gyroHeading += 0.01f * angleDiff
         gyroHeading = normalizeAngle(gyroHeading)
+    }
+
+    /**
+     * 应用平滑滤波，减少航向抖动
+     */
+    private fun applySmoothingFilter() {
+        headingHistory.add(currentHeading)
+        if (headingHistory.size > smoothingWindowSize) {
+            headingHistory.removeAt(0)
+        }
+
+        // 使用圆周平均计算平滑航向
+        if (headingHistory.size >= 3) {
+            var sinSum = 0.0
+            var cosSum = 0.0
+            for (h in headingHistory) {
+                sinSum += kotlin.math.sin(h.toDouble())
+                cosSum += kotlin.math.cos(h.toDouble())
+            }
+            currentHeading = normalizeAngle(kotlin.math.atan2(sinSum, cosSum).toFloat())
+        }
     }
 
     /**
@@ -148,6 +200,11 @@ class HeadingEstimator {
     }
 
     /**
+     * 是否使用 RotationVector
+     */
+    fun isUsingRotationVector(): Boolean = hasRotationVector
+
+    /**
      * 重置状态
      */
     fun reset() {
@@ -157,6 +214,8 @@ class HeadingEstimator {
         lastTimestamp = 0L
         headingOffset = 0f
         isCalibrated = false
+        hasRotationVector = false
+        headingHistory.clear()
     }
 
     companion object {
