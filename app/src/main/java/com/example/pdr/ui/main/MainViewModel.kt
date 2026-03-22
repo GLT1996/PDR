@@ -156,7 +156,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun saveCurrentTrajectory() {
         viewModelScope.launch {
             val points = serviceManager.getTrajectoryPoints()
-            if (points.isEmpty()) return@launch
+            android.util.Log.d("MainViewModel", "saveCurrentTrajectory: points count = ${points.size}")
+
+            if (points.isEmpty()) {
+                _statusMessage.value = "没有轨迹数据可保存"
+                return@launch
+            }
 
             val now = System.currentTimeMillis()
             val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
@@ -169,9 +174,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             try {
-                trajectoryRepository.saveTrajectory(trajectory, points)
-                _statusMessage.value = "轨迹已保存"
+                val savedId = trajectoryRepository.saveTrajectory(trajectory, points)
+                android.util.Log.d("MainViewModel", "saveCurrentTrajectory: saved with id = $savedId")
+                _statusMessage.value = "轨迹已保存 (${points.size}个点)"
             } catch (e: Exception) {
+                android.util.Log.e("MainViewModel", "saveCurrentTrajectory failed: ${e.message}", e)
                 _statusMessage.value = "保存失败: ${e.message}"
             }
         }

@@ -111,6 +111,7 @@ class HistoryFragment : Fragment() {
 
     private fun observeViewModel() {
         viewModel.trajectories.observe(viewLifecycleOwner) { list ->
+            android.util.Log.d("HistoryFragment", "observeViewModel: received ${list.size} trajectories")
             adapter.submitList(list)
             textEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         }
