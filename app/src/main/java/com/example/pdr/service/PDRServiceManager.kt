@@ -35,19 +35,20 @@ class PDRServiceManager(private val context: Context) {
     private var externalPositionListener: ((TrajectoryPoint) -> Unit)? = null
     private var externalSensorListener: ((SensorData) -> Unit)? = null
 
+    // 服务绑定回调
+    private var onServiceConnectedCallback: (() -> Unit)? = null
+
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as PDRService.LocalBinder
             service = localBinder.getService()
             isBound = true
 
-            // 设置内部回调，同时通知外部
+            // 设置服务内部回调
             service?.setOnPositionUpdateListener { point ->
-                // 更新内部状态
                 _currentSteps.value = service?.getTotalSteps() ?: 0
                 _currentDistance.value = service?.getTotalDistance() ?: 0f
                 _currentDuration.value = service?.getDuration() ?: 0
-                // 通知外部监听器
                 externalPositionListener?.invoke(point)
             }
 
@@ -56,6 +57,9 @@ class PDRServiceManager(private val context: Context) {
             }
 
             _isRunning.value = true
+
+            // 通知服务已绑定
+            onServiceConnectedCallback?.invoke()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -67,8 +71,11 @@ class PDRServiceManager(private val context: Context) {
 
     /**
      * 启动并绑定服务
+     * @param onConnected 服务绑定完成后的回调
      */
-    fun startAndBind(trajectoryId: Long = 0) {
+    fun startAndBind(trajectoryId: Long = 0, onConnected: (() -> Unit)? = null) {
+        this.onServiceConnectedCallback = onConnected
+
         val intent = Intent(context, PDRService::class.java).apply {
             action = PDRService.ACTION_START
             putExtra(PDRService.EXTRA_TRAJECTORY_ID, trajectoryId)
@@ -134,13 +141,6 @@ class PDRServiceManager(private val context: Context) {
      */
     fun setOnPositionUpdateListener(listener: (TrajectoryPoint) -> Unit) {
         externalPositionListener = listener
-        // 如果服务已绑定，同时更新服务的监听器
-        service?.setOnPositionUpdateListener { point ->
-            _currentSteps.value = service?.getTotalSteps() ?: 0
-            _currentDistance.value = service?.getTotalDistance() ?: 0f
-            _currentDuration.value = service?.getDuration() ?: 0
-            listener.invoke(point)
-        }
     }
 
     /**
@@ -148,8 +148,12 @@ class PDRServiceManager(private val context: Context) {
      */
     fun setOnSensorUpdateListener(listener: (SensorData) -> Unit) {
         externalSensorListener = listener
-        service?.setOnSensorUpdateListener(listener)
     }
+
+    /**
+     * 检查服务是否已绑定
+     */
+    fun isServiceBound(): Boolean = isBound
 
     /**
      * 获取总步数
@@ -193,7 +197,6 @@ class PDRServiceManager(private val context: Context) {
      */
     fun resetPosition() {
         service?.resetPosition()
-        // 重置内部状态
         _currentSteps.value = 0
         _currentDistance.value = 0f
         _currentDuration.value = 0L

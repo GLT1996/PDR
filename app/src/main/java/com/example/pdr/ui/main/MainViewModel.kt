@@ -1,7 +1,6 @@
 package com.example.pdr.ui.main
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -13,11 +12,13 @@ import com.example.pdr.data.repository.PDRRepository
 import com.example.pdr.data.repository.TrajectoryRepository
 import com.example.pdr.domain.sensor.SensorController
 import com.example.pdr.service.PDRServiceManager
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -57,10 +58,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _savedTrajectories = MutableLiveData<List<Trajectory>>()
     val savedTrajectories: LiveData<List<Trajectory>> = _savedTrajectories
 
-    private var trackingJob: Job? = null
     private var currentTrajectoryId: Long = 0
 
     init {
+        _isRecording.value = false
         initRepositories()
         checkSensors()
         loadSavedTrajectories()
@@ -109,11 +110,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _totalSteps.value = 0
         _totalDistance.value = 0f
         _duration.value = 0L
+        _statusMessage.value = "正在启动..."
 
-        // 启动前台服务（服务会在startTracking中自动重置位置）
-        serviceManager.startAndBind(currentTrajectoryId)
-
-        // 设置更新监听
+        // 先设置监听器
         serviceManager.setOnPositionUpdateListener { point ->
             val currentPoints = _trajectoryPoints.value?.toMutableList() ?: mutableListOf()
             currentPoints.add(point)
@@ -125,8 +124,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _currentHeading.postValue(serviceManager.getCurrentHeading())
         }
 
-        _isRecording.value = true
-        _statusMessage.value = "开始记录轨迹"
+        // 启动前台服务，等待绑定完成
+        serviceManager.startAndBind(currentTrajectoryId) {
+            // 服务绑定完成后的回调
+            _isRecording.postValue(true)
+            _statusMessage.postValue("开始记录轨迹")
+        }
     }
 
     /**
@@ -153,8 +156,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (points.isEmpty()) return@launch
 
             val now = System.currentTimeMillis()
+            val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
             val trajectory = Trajectory(
-                name = "轨迹_${java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
+                name = "轨迹_${dateFormat.format(Date(now))}",
                 startTime = now,
                 endTime = now,
                 totalSteps = _totalSteps.value ?: 0,
