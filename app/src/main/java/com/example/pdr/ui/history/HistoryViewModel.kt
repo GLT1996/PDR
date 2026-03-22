@@ -1,7 +1,6 @@
 package com.example.pdr.ui.history
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -25,40 +24,18 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     val statusMessage: LiveData<String> = _statusMessage
 
     init {
-        Log.d("HistoryViewModel", "init: initializing")
-        val database = TrajectoryDatabase.getInstance(application)
-        val dao = database.trajectoryDao()
+        val dao = TrajectoryDatabase.getInstance(application).trajectoryDao()
         repository = TrajectoryRepository(dao)
-
-        // 先执行一次性查询测试
-        viewModelScope.launch {
-            try {
-                val testList = dao.getAllTrajectoriesOnce()
-                Log.d("HistoryViewModel", "init: one-time query found ${testList.size} trajectories")
-                testList.forEach {
-                    Log.d("HistoryViewModel", "  - trajectory: id=${it.id}, name=${it.name}")
-                }
-            } catch (e: Exception) {
-                Log.e("HistoryViewModel", "init: one-time query failed: ${e.message}", e)
-            }
-        }
-
         loadTrajectories()
     }
 
     fun loadTrajectories() {
-        Log.d("HistoryViewModel", "loadTrajectories: starting to observe")
         viewModelScope.launch {
             repository.getAllTrajectories()
                 .onEach { list ->
-                    Log.d("HistoryViewModel", "loadTrajectories: received ${list.size} trajectories")
-                    list.forEach {
-                        Log.d("HistoryViewModel", "  - trajectory: id=${it.id}, name=${it.name}")
-                    }
                     _trajectories.postValue(list)
                 }
                 .catch { e ->
-                    Log.e("HistoryViewModel", "loadTrajectories error: ${e.message}", e)
                     _statusMessage.postValue("加载失败: ${e.message}")
                 }
                 .launchIn(viewModelScope)

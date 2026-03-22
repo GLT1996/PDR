@@ -32,9 +32,6 @@ interface TrajectoryDao {
     @Query("SELECT * FROM trajectories ORDER BY startTime DESC")
     fun getAllTrajectories(): Flow<List<Trajectory>>
 
-    @Query("SELECT * FROM trajectories ORDER BY startTime DESC")
-    suspend fun getAllTrajectoriesOnce(): List<Trajectory>
-
     @Query("SELECT * FROM trajectories ORDER BY startTime DESC LIMIT :limit")
     fun getRecentTrajectories(limit: Int): Flow<List<Trajectory>>
 
