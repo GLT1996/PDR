@@ -39,7 +39,7 @@ class HeadingEstimator {
 
     // 平滑滤波
     private val headingHistory = mutableListOf<Float>()
-    private val smoothingWindowSize = 5
+    private val smoothingWindowSize = 10  // 增大窗口以更好平滑航向抖动
 
     /**
      * 处理传感器数据，更新航向估计

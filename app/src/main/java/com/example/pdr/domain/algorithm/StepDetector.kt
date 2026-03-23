@@ -25,6 +25,9 @@ class StepDetector {
     private val gravityAlpha = 0.8f  // 重力滤波系数
     private var gravityInitialized = false
 
+    // 线性加速度（去除重力后）
+    private val linearAcceleration = FloatArray(3)
+
     // 状态变量
     private var lastStepTime = 0L
     private var filteredMagnitude = 0f
@@ -38,18 +41,8 @@ class StepDetector {
     private val peakHistorySize = 10
     private var adaptiveThresholdFactor = 0.02f  // 初始阈值因子
 
-    // 前后加速度窗口（用于检测前进/后退）
-    private val forwardAccelWindow = mutableListOf<Float>()
-    private val forwardWindowSize = 25  // 增大窗口
-
     // 步数计数
     private var stepCount = 0
-
-    // 上一步的方向（1=前进，-1=后退）
-    private var lastStepDirection = 1
-
-    // 线性加速度（去除重力后）
-    private val linearAcceleration = FloatArray(3)
 
     /**
      * 处理传感器数据，检测步伐
@@ -86,12 +79,6 @@ class StepDetector {
             magnitudeWindow.removeAt(0)
         }
 
-        // 更新前后加速度窗口（使用线性加速度Y分量）
-        forwardAccelWindow.add(linearAcceleration[1])
-        if (forwardAccelWindow.size > forwardWindowSize) {
-            forwardAccelWindow.removeAt(0)
-        }
-
         // 需要足够的数据才能检测
         if (magnitudeWindow.size < windowSize) {
             return null
@@ -101,9 +88,10 @@ class StepDetector {
         val stepDetected = detectPeak(currentTime)
 
         return if (stepDetected) {
-            // 检测方向
-            val direction = detectDirection()
-            StepResult(stepCount, direction)
+            // 方向始终为前进（1）
+            // 注意：设备坐标系下的前进/后退检测不可靠，容易导致"原地乱画"
+            // 如果需要后退检测，应考虑使用地图约束或其他可靠方法
+            StepResult(stepCount, 1)
         } else {
             null
         }
@@ -204,47 +192,6 @@ class StepDetector {
     }
 
     /**
-     * 检测步伐方向（前进或后退）
-     * 原理：分析步伐周期内的前后加速度变化模式
-     * 前进：起步时向前加速（正Y），着地时向后减速（负Y）
-     * 后退：起步时向后加速（负Y），着地时向前减速（正Y）
-     */
-    private fun detectDirection(): Int {
-        if (forwardAccelWindow.size < forwardWindowSize) {
-            return 1  // 默认前进
-        }
-
-        // 分析加速度变化：前半段减去后半段
-        val halfSize = forwardWindowSize / 2
-        var firstHalfSum = 0f
-        var secondHalfSum = 0f
-
-        for (i in 0 until halfSize) {
-            firstHalfSum += forwardAccelWindow[i]
-        }
-        for (i in halfSize until forwardWindowSize) {
-            secondHalfSum += forwardAccelWindow[i]
-        }
-
-        val diff = firstHalfSum - secondHalfSum
-
-        // 使用自适应阈值
-        val directionThreshold = 0.3f  // 降低阈值使其更敏感
-
-        // 如果前半段加速度大于后半段，说明是前进
-        // 因为前进时起步阶段向前加速（正值在前），着地时减速（负值在后）
-        return if (diff > directionThreshold) {
-            1   // 前进
-        } else if (diff < -directionThreshold) {
-            -1  // 后退
-        } else {
-            lastStepDirection  // 保持上一次的方向
-        }.also {
-            lastStepDirection = it
-        }
-    }
-
-    /**
      * 获取当前步数
      */
     fun getStepCount(): Int = stepCount
@@ -262,10 +209,8 @@ class StepDetector {
         gravityY = 0f
         gravityZ = 0f
         magnitudeWindow.clear()
-        forwardAccelWindow.clear()
         recentPeakValues.clear()
         adaptiveThresholdFactor = 0.02f
-        lastStepDirection = 1
     }
 
     /**

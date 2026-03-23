@@ -36,8 +36,8 @@ class PositionCalculator {
 
     // 位置平滑相关
     private val recentPositions = mutableListOf<Pair<Float, Float>>()
-    private var smoothingWindow = 3  // 平滑窗口大小
-    private var smoothingEnabled = true
+    private var smoothingWindow = 1  // 禁用位置平滑，避免轨迹变形
+    private var smoothingEnabled = false  // 默认禁用
 
     /**
      * 处理传感器数据，更新位置
