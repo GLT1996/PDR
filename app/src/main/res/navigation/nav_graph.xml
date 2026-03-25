@@ -12,7 +12,16 @@
         <action
             android:id="@+id/action_home_to_main"
             app:destination="@id/mainFragment" />
+        <action
+            android:id="@+id/action_home_to_viewer"
+            app:destination="@id/viewerFragment" />
     </fragment>
+
+    <!-- 3D 模型查看页面 -->
+    <fragment
+        android:id="@+id/viewerFragment"
+        android:name="com.example.pdr.ui.viewer.ViewerFragment"
+        android:label="3D 模型查看" />
 
     <!-- PDR 主页面 -->
     <fragment

@@ -42,5 +42,10 @@ class HomeFragment : Fragment() {
         rootView.findViewById<View>(R.id.cardPdr).setOnClickListener {
             findNavController().navigate(R.id.action_home_to_main)
         }
+
+        // 3D 模型查看卡片点击
+        rootView.findViewById<View>(R.id.cardViewer).setOnClickListener {
+            findNavController().navigate(R.id.action_home_to_viewer)
+        }
     }
 }
