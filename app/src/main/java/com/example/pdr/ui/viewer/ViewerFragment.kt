@@ -23,6 +23,9 @@ class ViewerFragment : Fragment() {
     private lateinit var gestureController: GestureController
     private lateinit var textTitle: TextView
 
+    // 保存当前模型文件名（用于显示标题）
+    private var currentModelFileName: String? = null
+
     // 文件选择器
     private val openFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -56,6 +59,8 @@ class ViewerFragment : Fragment() {
 
     private fun initViews(view: View) {
         textTitle = view.findViewById(R.id.textTitle)
+        // 恢复标题
+        currentModelFileName?.let { textTitle.text = it }
     }
 
     private fun initGLSurfaceView(view: View) {
@@ -63,6 +68,9 @@ class ViewerFragment : Fragment() {
 
         // 创建渲染器
         renderer = GLRenderer(requireContext())
+
+        // 先设置默认模型（在 setRenderer 之前）
+        renderer.loadModel("models/cube.obj")
 
         // 配置 GLSurfaceView
         glSurfaceView.setEGLContextClientVersion(2)
@@ -72,9 +80,6 @@ class ViewerFragment : Fragment() {
         // 设置手势控制
         gestureController = GestureController(renderer)
         glSurfaceView.setOnTouchListener(gestureController)
-
-        // 加载示例模型
-        renderer.loadModel("models/cube.obj")
     }
 
     private fun setupButtons(view: View) {
@@ -117,11 +122,18 @@ class ViewerFragment : Fragment() {
                 return
             }
 
-            // 加载模型
+            // 设置待加载模型
             renderer.loadModelFromInputStream(inputStream, fileName)
+
+            // 在 GL 线程中执行加载
+            glSurfaceView.queueEvent {
+                renderer.loadPendingModelOnGLThread()
+            }
+
             gestureController.resetView()
 
-            // 更新标题
+            // 保存文件名并更新标题
+            currentModelFileName = fileName
             textTitle.text = fileName
             Toast.makeText(requireContext(), "已加载: $fileName", Toast.LENGTH_SHORT).show()
 

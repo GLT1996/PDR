@@ -46,6 +46,9 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var pendingInputStream: InputStream? = null
     private var pendingFileName: String? = null
 
+    // 已加载的模型数据（用于 GL 上下文重建时恢复）
+    private var savedModel: Model? = null
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // 设置背景色
         GLES20.glClearColor(0.95f, 0.95f, 0.95f, 1.0f)
@@ -59,12 +62,25 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // 初始化矩阵
         Matrix.setIdentityM(modelMatrix, 0)
 
-        // 加载待加载的模型
-        pendingInputStream?.let { stream ->
-            pendingFileName?.let { name ->
-                loadModelFromInputStreamInternal(stream, name)
-            }
-        } ?: pendingModelFile?.let { loadModelInternal(it) }
+        // 加载模型逻辑：
+        // 1. 如果有新待加载的数据，加载新模型
+        // 2. 否则如果有保存的模型数据，恢复它
+        if (pendingInputStream != null && pendingFileName != null) {
+            // 有新的输入流待加载
+            loadModelFromInputStreamInternal(pendingInputStream!!, pendingFileName!!)
+            pendingInputStream = null
+            pendingFileName = null
+        } else if (pendingModelFile != null) {
+            // 有新的 assets 文件待加载
+            loadModelInternal(pendingModelFile!!)
+            pendingModelFile = null
+        } else if (savedModel != null) {
+            // 没有新数据，恢复已保存的模型
+            mesh?.release()
+            mesh = Mesh(savedModel!!)
+            mesh?.initShader()
+            android.util.Log.d("GLRenderer", "Model restored from saved data")
+        }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -121,6 +137,7 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         pendingModelFile = fileName
         pendingInputStream = null
         pendingFileName = null
+        savedModel = null  // 清除旧模型，确保加载新模型
     }
 
     /**
@@ -132,6 +149,21 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         pendingInputStream = inputStream
         pendingFileName = fileName
         pendingModelFile = null
+        savedModel = null  // 清除旧模型，确保加载新模型
+    }
+
+    /**
+     * 在 GL 线程中执行加载（由 GLSurfaceView.queueEvent 调用）
+     */
+    fun loadPendingModelOnGLThread() {
+        if (pendingInputStream != null && pendingFileName != null) {
+            loadModelFromInputStreamInternal(pendingInputStream!!, pendingFileName!!)
+            pendingInputStream = null
+            pendingFileName = null
+        } else if (pendingModelFile != null) {
+            loadModelInternal(pendingModelFile!!)
+            pendingModelFile = null
+        }
     }
 
     /**
@@ -157,6 +189,9 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             modelMaxDimension = boundingBox.maxDimension
 
             android.util.Log.d("GLRenderer", "Model loaded from stream: ${model.getVertexCount()} vertices, maxDim=$modelMaxDimension")
+
+            // 保存模型数据（用于 GL 上下文重建时恢复）
+            savedModel = model
 
             // 创建网格
             mesh?.release()
@@ -201,6 +236,9 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             modelMaxDimension = boundingBox.maxDimension
 
             android.util.Log.d("GLRenderer", "Model loaded: ${model.getVertexCount()} vertices, maxDim=$modelMaxDimension")
+
+            // 保存模型数据（用于 GL 上下文重建时恢复）
+            savedModel = model
 
             // 创建网格
             mesh?.release()
@@ -263,6 +301,9 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         val model = Model(vertices = vertices, normals = normals, faces = null)
         modelMaxDimension = 1f
+
+        // 保存模型数据
+        savedModel = model
 
         mesh?.release()
         mesh = Mesh(model)
