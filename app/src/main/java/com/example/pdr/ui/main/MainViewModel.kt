@@ -50,6 +50,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val sensorStatus: LiveData<Map<String, Boolean>> = _sensorStatus
 
     private var currentTrajectoryId: Long = 0
+    private var recordingStartTime: Long = 0L
 
     init {
         _isRecording.value = false
@@ -88,6 +89,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _totalDistance.value = 0f
         _duration.value = 0L
         _statusMessage.value = "正在启动..."
+
+        // 记录开始时间
+        recordingStartTime = System.currentTimeMillis()
 
         // 重置服务中的轨迹数据
         serviceManager.resetPosition()
@@ -137,12 +141,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
 
-            val now = System.currentTimeMillis()
+            val endTime = System.currentTimeMillis()
             val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
             val trajectory = Trajectory(
-                name = "轨迹_${dateFormat.format(Date(now))}",
-                startTime = now,
-                endTime = now,
+                name = "轨迹_${dateFormat.format(Date(endTime))}",
+                startTime = recordingStartTime,
+                endTime = endTime,
                 totalSteps = _totalSteps.value ?: 0,
                 totalDistance = _totalDistance.value ?: 0f
             )
@@ -189,6 +193,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 trajectory?.let {
                     _totalSteps.value = it.totalSteps
                     _totalDistance.value = it.totalDistance
+                    // 计算时长：endTime - startTime
+                    val duration = (it.endTime ?: it.startTime) - it.startTime
+                    _duration.value = if (duration > 0) duration else 0L
                 }
                 _statusMessage.value = "已加载历史轨迹"
             } catch (e: Exception) {
