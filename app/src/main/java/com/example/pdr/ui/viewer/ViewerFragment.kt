@@ -1,11 +1,15 @@
 package com.example.pdr.ui.viewer
 
+import android.net.Uri
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -17,6 +21,14 @@ class ViewerFragment : Fragment() {
     private lateinit var glSurfaceView: GLSurfaceView
     private lateinit var renderer: GLRenderer
     private lateinit var gestureController: GestureController
+    private lateinit var textTitle: TextView
+
+    // 文件选择器
+    private val openFileLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { loadModelFromUri(it) }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,6 +41,7 @@ class ViewerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupWindowInsets(view)
+        initViews(view)
         initGLSurfaceView(view)
         setupButtons(view)
     }
@@ -39,6 +52,10 @@ class ViewerFragment : Fragment() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    private fun initViews(view: View) {
+        textTitle = view.findViewById(R.id.textTitle)
     }
 
     private fun initGLSurfaceView(view: View) {
@@ -64,6 +81,81 @@ class ViewerFragment : Fragment() {
         view.findViewById<Button>(R.id.btnReset).setOnClickListener {
             gestureController.resetView()
         }
+
+        view.findViewById<Button>(R.id.btnImport).setOnClickListener {
+            openFilePicker()
+        }
+    }
+
+    /**
+     * 打开文件选择器
+     */
+    private fun openFilePicker() {
+        // 支持所有文件类型，让用户选择 OBJ 或 STL
+        openFileLauncher.launch(arrayOf("*/*"))
+    }
+
+    /**
+     * 从 URI 加载模型
+     */
+    private fun loadModelFromUri(uri: Uri) {
+        try {
+            // 获取文件名
+            val fileName = getFileName(uri)
+
+            // 检查文件格式
+            if (!fileName.endsWith(".obj", ignoreCase = true) &&
+                !fileName.endsWith(".stl", ignoreCase = true)) {
+                Toast.makeText(requireContext(), "请选择 .obj 或 .stl 文件", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // 打开输入流
+            val inputStream = requireContext().contentResolver.openInputStream(uri)
+            if (inputStream == null) {
+                Toast.makeText(requireContext(), "无法打开文件", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // 加载模型
+            renderer.loadModelFromInputStream(inputStream, fileName)
+            gestureController.resetView()
+
+            // 更新标题
+            textTitle.text = fileName
+            Toast.makeText(requireContext(), "已加载: $fileName", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * 从 URI 获取文件名
+     */
+    private fun getFileName(uri: Uri): String {
+        var fileName = "unknown"
+
+        // 尝试从 ContentResolver 获取
+        requireContext().contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && nameIndex >= 0) {
+                fileName = cursor.getString(nameIndex)
+            }
+        }
+
+        // 如果获取失败，从路径提取
+        if (fileName == "unknown") {
+            fileName = uri.lastPathSegment ?: "unknown"
+            // 去掉路径前缀
+            val lastSlash = fileName.lastIndexOf('/')
+            if (lastSlash >= 0) {
+                fileName = fileName.substring(lastSlash + 1)
+            }
+        }
+
+        return fileName
     }
 
     override fun onResume() {

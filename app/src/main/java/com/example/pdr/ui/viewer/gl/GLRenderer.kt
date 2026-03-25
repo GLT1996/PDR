@@ -22,6 +22,8 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     var rotationX: Float = 0f
     var rotationY: Float = 0f
     var scale: Float = 1f
+    var translateX: Float = 0f
+    var translateY: Float = 0f
 
     // 模型颜色 (RGBA)
     var modelColor: FloatArray = floatArrayOf(0.2f, 0.6f, 0.8f, 1.0f)
@@ -41,6 +43,8 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // 待加载的模型文件名
     private var pendingModelFile: String? = null
+    private var pendingInputStream: InputStream? = null
+    private var pendingFileName: String? = null
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // 设置背景色
@@ -56,7 +60,11 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.setIdentityM(modelMatrix, 0)
 
         // 加载待加载的模型
-        pendingModelFile?.let { loadModelInternal(it) }
+        pendingInputStream?.let { stream ->
+            pendingFileName?.let { name ->
+                loadModelFromInputStreamInternal(stream, name)
+            }
+        } ?: pendingModelFile?.let { loadModelInternal(it) }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -82,7 +90,11 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
             // 计算模型矩阵
             Matrix.setIdentityM(modelMatrix, 0)
+            // 应用平移
+            Matrix.translateM(modelMatrix, 0, translateX, translateY, 0f)
+            // 应用缩放
             Matrix.scaleM(modelMatrix, 0, scale, scale, scale)
+            // 应用旋转
             Matrix.rotateM(modelMatrix, 0, rotationX, 1f, 0f, 0f)
             Matrix.rotateM(modelMatrix, 0, rotationY, 0f, 1f, 0f)
 
@@ -107,6 +119,61 @@ class GLRenderer(private val context: Context) : GLSurfaceView.Renderer {
      */
     fun loadModel(fileName: String) {
         pendingModelFile = fileName
+        pendingInputStream = null
+        pendingFileName = null
+    }
+
+    /**
+     * 从 InputStream 加载模型（线程安全）
+     * @param inputStream 文件输入流
+     * @param fileName 文件名，用于判断格式
+     */
+    fun loadModelFromInputStream(inputStream: InputStream, fileName: String) {
+        pendingInputStream = inputStream
+        pendingFileName = fileName
+        pendingModelFile = null
+    }
+
+    /**
+     * 内部加载模型 - 从 InputStream（在 GL 线程中调用）
+     */
+    private fun loadModelFromInputStreamInternal(inputStream: InputStream, fileName: String) {
+        try {
+            val model = when {
+                fileName.endsWith(".obj", ignoreCase = true) -> ObjParser.parse(inputStream)
+                fileName.endsWith(".stl", ignoreCase = true) -> StlParser.parse(inputStream)
+                else -> throw IllegalArgumentException("不支持的文件格式: $fileName")
+            }
+
+            // 检查模型是否有效
+            if (model.vertices.isEmpty()) {
+                android.util.Log.e("GLRenderer", "Model has no vertices, creating fallback cube")
+                createFallbackCube()
+                return
+            }
+
+            // 计算模型边界
+            val boundingBox = model.getBoundingBox()
+            modelMaxDimension = boundingBox.maxDimension
+
+            android.util.Log.d("GLRenderer", "Model loaded from stream: ${model.getVertexCount()} vertices, maxDim=$modelMaxDimension")
+
+            // 创建网格
+            mesh?.release()
+            mesh = Mesh(model)
+            mesh?.initShader()
+
+        } catch (e: Exception) {
+            android.util.Log.e("GLRenderer", "Failed to load model from stream: ${e.message}")
+            e.printStackTrace()
+            createFallbackCube()
+        } finally {
+            try {
+                inputStream.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     /**
