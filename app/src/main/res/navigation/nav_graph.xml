@@ -15,7 +15,16 @@
         <action
             android:id="@+id/action_home_to_viewer"
             app:destination="@id/viewerFragment" />
+        <action
+            android:id="@+id/action_home_to_location"
+            app:destination="@id/locationFragment" />
     </fragment>
+
+    <!-- GPS 定位页面 -->
+    <fragment
+        android:id="@+id/locationFragment"
+        android:name="com.example.pdr.ui.location.LocationFragment"
+        android:label="GPS 定位" />
 
     <!-- 3D 模型查看页面 -->
     <fragment

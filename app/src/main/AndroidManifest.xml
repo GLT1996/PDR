@@ -7,6 +7,12 @@
 
     <!-- ==================== 权限声明 ==================== -->
 
+    <!-- 位置权限: 用于获取 GPS 和网络定位信息 -->
+    <!-- ACCESS_FINE_LOCATION: 精确位置(GPS)，精度约 2-10 米 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- ACCESS_COARSE_LOCATION: 大概位置(网络/WiFi)，精度约 50-1000 米 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <!-- ACTIVITY_RECOGNITION: 活动识别权限，用于检测用户行为(步行/跑步/静止等)
          Android 10+ 需要动态申请此权限才能访问计步器等传感器 -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />

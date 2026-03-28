@@ -60,6 +60,9 @@ dependencies {
     implementation(libs.bundles.room)
     kapt(libs.androidx.room.compiler)
 
+    // Google Play Services Location (GPS定位)
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

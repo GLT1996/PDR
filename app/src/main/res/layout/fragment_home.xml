@@ -141,9 +141,9 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- 预留功能卡片 2 -->
+        <!-- GPS 定位卡片 -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/cardPlaceholder2"
+            android:id="@+id/cardLocation"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -167,17 +167,25 @@
                 <ImageView
                     android:layout_width="64dp"
                     android:layout_height="64dp"
-                    android:src="@android:drawable/ic_menu_help"
-                    android:alpha="0.3"
-                    android:contentDescription="预留功能图标" />
+                    android:src="@android:drawable/ic_menu_mylocation"
+                    android:contentDescription="定位图标" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="敬请期待"
-                    android:textColor="#9E9E9E"
-                    android:textSize="16sp" />
+                    android:text="GPS 定位"
+                    android:textColor="#212121"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="实时位置追踪"
+                    android:textColor="#757575"
+                    android:textSize="12sp" />
 
             </LinearLayout>
 

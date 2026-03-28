@@ -47,5 +47,10 @@ class HomeFragment : Fragment() {
         rootView.findViewById<View>(R.id.cardViewer).setOnClickListener {
             findNavController().navigate(R.id.action_home_to_viewer)
         }
+
+        // GPS 定位卡片点击
+        rootView.findViewById<View>(R.id.cardLocation).setOnClickListener {
+            findNavController().navigate(R.id.action_home_to_location)
+        }
     }
 }
