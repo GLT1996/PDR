@@ -53,6 +53,17 @@
                 android:textSize="14sp"
                 android:gravity="center" />
 
+            <!-- 更新次数 -->
+            <TextView
+                android:id="@+id/textUpdateCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="更新次数: 0"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp"
+                android:gravity="center" />
+
             <!-- 经度 -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -255,5 +266,44 @@
             android:enabled="false" />
 
     </LinearLayout>
+
+    <!-- 诊断信息卡片 -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFF3E0"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="诊断信息"
+                android:textColor="#E65100"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textDiagnostic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="点击开始定位获取位置信息"
+                android:textColor="#BF360C"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

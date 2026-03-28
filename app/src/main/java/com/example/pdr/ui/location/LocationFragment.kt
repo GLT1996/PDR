@@ -30,6 +30,10 @@ class LocationFragment : Fragment() {
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
         if (fineLocationGranted || coarseLocationGranted) {
+            // 提示用户权限级别
+            if (!fineLocationGranted && coarseLocationGranted) {
+                Toast.makeText(requireContext(), "注意：仅授予粗略位置权限，定位精度较低", Toast.LENGTH_LONG).show()
+            }
             viewModel.startLocationUpdates()
         } else {
             Toast.makeText(requireContext(), "需要定位权限才能获取位置", Toast.LENGTH_LONG).show()
@@ -82,8 +86,28 @@ class LocationFragment : Fragment() {
             }
         }
 
+        viewModel.locationState.observe(viewLifecycleOwner) { state ->
+            val stateText = when (state) {
+                LocationViewModel.LocationState.IDLE -> "状态: 未开始"
+                LocationViewModel.LocationState.SEARCHING_GPS -> "状态: 搜索GPS信号..."
+                LocationViewModel.LocationState.SEARCHING_NETWORK -> "状态: 网络定位"
+                LocationViewModel.LocationState.LOCATED -> "状态: 已定位 ✓"
+                LocationViewModel.LocationState.NO_SIGNAL -> "状态: 无信号 ⚠"
+                LocationViewModel.LocationState.PERMISSION_DENIED -> "状态: 权限被拒绝 ✗"
+            }
+            binding.textStatus.text = stateText
+        }
+
         viewModel.statusMessage.observe(viewLifecycleOwner) { message ->
             binding.textStatus.text = message
+        }
+
+        viewModel.updateCountText.observe(viewLifecycleOwner) { count ->
+            binding.textUpdateCount.text = count
+        }
+
+        viewModel.diagnosticInfo.observe(viewLifecycleOwner) { info ->
+            binding.textDiagnostic.text = info
         }
 
         viewModel.longitude.observe(viewLifecycleOwner) { longitude ->
