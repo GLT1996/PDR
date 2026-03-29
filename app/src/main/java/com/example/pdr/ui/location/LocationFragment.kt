@@ -59,7 +59,8 @@ class LocationFragment : Fragment() {
     private fun setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            // 为底部留出空间，通过ScrollView的底部margin处理
             insets
         }
     }
@@ -136,6 +137,15 @@ class LocationFragment : Fragment() {
 
         viewModel.updateTime.observe(viewLifecycleOwner) { time ->
             binding.textUpdateTime.text = time
+        }
+
+        // 设备方向（传感器）
+        viewModel.deviceAzimuth.observe(viewLifecycleOwner) { azimuth ->
+            binding.compassView.setAzimuth(azimuth)
+        }
+
+        viewModel.deviceBearing.observe(viewLifecycleOwner) { bearing ->
+            binding.textDeviceBearing.text = bearing
         }
     }
 

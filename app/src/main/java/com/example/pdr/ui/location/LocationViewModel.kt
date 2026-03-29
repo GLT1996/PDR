@@ -1,7 +1,13 @@
 package com.example.pdr.ui.location
 
 import android.app.Application
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,7 +21,21 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LocationViewModel(application: Application) : AndroidViewModel(application) {
+class LocationViewModel(application: Application) : AndroidViewModel(application), SensorEventListener {
+
+    companion object {
+        private const val TAG = "LocationViewModel"
+    }
+
+    // 传感器管理
+    private val sensorManager: SensorManager =
+        application.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val magnetometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
+    // 传感器数据缓存
+    private var accelerometerValues: FloatArray? = null
+    private var magnetometerValues: FloatArray? = null
 
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
@@ -72,22 +92,39 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     private val _updateTime = MutableLiveData<String>()
     val updateTime: LiveData<String> = _updateTime
 
+    // 设备方向（来自传感器）
+    private val _deviceAzimuth = MutableLiveData<Float>()
+    val deviceAzimuth: LiveData<Float> = _deviceAzimuth
+
+    private val _deviceBearing = MutableLiveData<String>()
+    val deviceBearing: LiveData<String> = _deviceBearing
+
+    // 罗盘是否启用
+    private val _compassEnabled = MutableLiveData<Boolean>()
+    val compassEnabled: LiveData<Boolean> = _compassEnabled
+
     init {
         _isLocating.value = false
         _locationState.value = LocationState.IDLE
         _statusMessage.value = "未开始定位"
         _updateCountText.value = "更新次数: 0"
         _diagnosticInfo.value = "点击开始定位获取位置信息"
+        _deviceAzimuth.value = 0f
+        _deviceBearing.value = "--°"
+        _compassEnabled.value = false
         initLocationCallback()
     }
 
     private fun initLocationCallback() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
+                Log.d(TAG, "onLocationResult called, locations count: ${locationResult.locations.size}")
                 locationResult.lastLocation?.let { location ->
+                    Log.d(TAG, "Location update: lat=${location.latitude}, lon=${location.longitude}, accuracy=${location.accuracy}, provider=${location.provider}")
                     updateLocationData(location)
                 } ?: run {
                     // 收到回调但没有位置数据
+                    Log.w(TAG, "onLocationResult called but lastLocation is null")
                     _locationState.postValue(LocationState.NO_SIGNAL)
                     _statusMessage.postValue("收到定位回调但无位置数据")
                     updateDiagnosticInfo("定位服务响应了，但未能获取位置。可能原因：室内GPS信号弱、定位服务未完全启用")
@@ -113,7 +150,8 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
             1000L  // 更新间隔：1秒
         ).apply {
             setMinUpdateIntervalMillis(500L)  // 最快更新间隔：0.5秒
-            setWaitForAccurateLocation(false)  // 不等待高精度，先返回任何位置
+            setWaitForAccurateLocation(true)   // 等待高精度位置，确保持续更新
+            setMinUpdateDistanceMeters(0f)     // 距离变化为0也更新（确保移动时更新）
         }.build()
 
         try {
@@ -121,13 +159,23 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
                 locationRequest,
                 locationCallback!!,
                 getApplication<Application>().mainLooper
-            )
+            ).addOnSuccessListener {
+                Log.d(TAG, "Location updates requested successfully")
+            }.addOnFailureListener { e ->
+                Log.e(TAG, "Failed to request location updates", e)
+                _locationState.postValue(LocationState.NO_SIGNAL)
+                _statusMessage.postValue("启动定位失败: ${e.message}")
+            }
             _isLocating.value = true
+
+            // 启用方向传感器
+            startCompass()
 
             // 先尝试获取最后已知位置
             getLastLocation()
 
         } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException: missing location permission", e)
             _locationState.value = LocationState.PERMISSION_DENIED
             _statusMessage.value = "缺少定位权限"
             _diagnosticInfo.value = "权限被拒绝。请在系统设置中授予位置权限"
@@ -143,6 +191,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         locationCallback?.let {
             fusedLocationClient.removeLocationUpdates(it)
         }
+        stopCompass()
         _isLocating.value = false
         _locationState.value = LocationState.IDLE
         _statusMessage.value = "定位已停止"
@@ -153,6 +202,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
      * 更新位置数据显示
      */
     private fun updateLocationData(location: Location) {
+        Log.d(TAG, "updateLocationData: count=${updateCount + 1}, lat=${location.latitude}, lon=${location.longitude}")
         updateCount++
         _updateCountText.postValue("更新次数: $updateCount")
 
@@ -160,7 +210,8 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         _latitude.postValue(String.format("%.6f", location.latitude))
         _accuracy.postValue(String.format("%.1f 米", location.accuracy))
         _speed.postValue(String.format("%.1f m/s", location.speed))
-        _bearing.postValue(String.format("%.1f°", location.bearing))
+        // GPS bearing显示移动方向，仅在移动时有效
+        _bearing.postValue(String.format("%.1f° (GPS)", location.bearing))
 
         val providerName = when (location.provider) {
             "fused" -> "融合定位"
@@ -220,5 +271,121 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     override fun onCleared() {
         super.onCleared()
         stopLocationUpdates()
+        stopCompass()
+    }
+
+    // ========== 方向传感器相关 ==========
+
+    /**
+     * 启动罗盘（方向传感器）
+     */
+    private fun startCompass() {
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        }
+        magnetometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        }
+        _compassEnabled.value = true
+        Log.d(TAG, "Compass started")
+    }
+
+    /**
+     * 停止罗盘
+     */
+    private fun stopCompass() {
+        sensorManager.unregisterListener(this)
+        _compassEnabled.value = false
+        accelerometerValues = null
+        magnetometerValues = null
+        Log.d(TAG, "Compass stopped")
+    }
+
+    /**
+     * SensorEventListener 实现
+     */
+    override fun onSensorChanged(event: SensorEvent) {
+        when (event.sensor.type) {
+            Sensor.TYPE_ACCELEROMETER -> {
+                accelerometerValues = event.values.clone()
+            }
+            Sensor.TYPE_MAGNETIC_FIELD -> {
+                magnetometerValues = event.values.clone()
+            }
+        }
+
+        // 当两个传感器数据都有时，计算方向
+        if (accelerometerValues != null && magnetometerValues != null) {
+            calculateAzimuth()
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        // 可以根据精度调整行为
+        Log.d(TAG, "Sensor ${sensor.name} accuracy changed to $accuracy")
+    }
+
+    /**
+     * 计算方位角
+     */
+    private fun calculateAzimuth() {
+        val acc = accelerometerValues ?: return
+        val mag = magnetometerValues ?: return
+
+        val rotationMatrix = FloatArray(9)
+        val orientationValues = FloatArray(3)
+
+        // 获取旋转矩阵
+        val success = SensorManager.getRotationMatrix(rotationMatrix, null, acc, mag)
+
+        if (success) {
+            // 获取方向值（azimuth, pitch, roll）
+            SensorManager.getOrientation(rotationMatrix, orientationValues)
+
+            // azimuth 范围是 -π 到 π，转换为 0-360度
+            var azimuth = Math.toDegrees(orientationValues[0].toDouble()).toFloat()
+            azimuth = (azimuth + 360) % 360 // 转换为 0-360
+
+            // 低通滤波平滑处理
+            val previousAzimuth = _deviceAzimuth.value ?: 0f
+            val smoothedAzimuth = smoothAzimuth(previousAzimuth, azimuth)
+
+            _deviceAzimuth.postValue(smoothedAzimuth)
+            _deviceBearing.postValue(String.format("%.1f° (%s)", smoothedAzimuth, getDirectionName(smoothedAzimuth)))
+
+            Log.d(TAG, "Azimuth: $smoothedAzimuth°")
+        }
+    }
+
+    /**
+     * 平滑方位角变化（低通滤波）
+     */
+    private fun smoothAzimuth(previous: Float, current: Float): Float {
+        val alpha = 0.3f // 平滑系数
+
+        // 处理跨越0/360边界的情况
+        var diff = current - previous
+        if (diff > 180) diff -= 360
+        if (diff < -180) diff += 360
+
+        return previous + alpha * diff
+    }
+
+    /**
+     * 根据方位角返回方向名称
+     */
+    private fun getDirectionName(azimuth: Float): String {
+        val normalizedAzimuth = ((azimuth % 360) + 360) % 360
+
+        return when {
+            normalizedAzimuth < 22.5 || normalizedAzimuth >= 337.5 -> "北"
+            normalizedAzimuth < 67.5 -> "东北"
+            normalizedAzimuth < 112.5 -> "东"
+            normalizedAzimuth < 157.5 -> "东南"
+            normalizedAzimuth < 202.5 -> "南"
+            normalizedAzimuth < 247.5 -> "西南"
+            normalizedAzimuth < 292.5 -> "西"
+            else -> "西北"
+        }
     }
 }

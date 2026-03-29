@@ -1,309 +1,357 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:fillViewport="true"
     android:background="#FAFAFA"
     tools:context=".ui.location.LocationFragment">
 
-    <!-- 顶部标题栏 -->
     <LinearLayout
-        android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:elevation="4dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp"
-            android:text="GPS 定位"
-            android:textColor="#212121"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:gravity="center" />
-
-    </LinearLayout>
-
-    <!-- 位置信息卡片 -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
-
+        <!-- 顶部标题栏 -->
         <LinearLayout
+            android:id="@+id/headerLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:background="#FFFFFF"
+            android:elevation="4dp">
 
-            <!-- 定位状态 -->
             <TextView
-                android:id="@+id/textStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="未开始定位"
-                android:textColor="#757575"
-                android:textSize="14sp"
+                android:padding="16dp"
+                android:text="GPS 定位"
+                android:textColor="#212121"
+                android:textSize="24sp"
+                android:textStyle="bold"
                 android:gravity="center" />
 
-            <!-- 更新次数 -->
-            <TextView
-                android:id="@+id/textUpdateCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="更新次数: 0"
-                android:textColor="#9E9E9E"
-                android:textSize="12sp"
-                android:gravity="center" />
+        </LinearLayout>
 
-            <!-- 经度 -->
+        <!-- 罗盘卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="经度："
+                    android:text="设备方向"
                     android:textColor="#212121"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/textLongitude"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-            <!-- 纬度 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                <com.example.pdr.ui.location.CompassView
+                    android:id="@+id/compassView"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="8dp" />
 
                 <TextView
+                    android:id="@+id/textDeviceBearing"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="纬度："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textLatitude"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-            <!-- 精度 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="精度："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textAccuracy"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="-- 米"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-            <!-- 速度 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="速度："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textSpeed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="-- m/s"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-            <!-- 方向 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="方向："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textBearing"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:text="--°"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
+                    android:textColor="#757575"
+                    android:textSize="18sp" />
 
             </LinearLayout>
 
-            <!-- 定位来源 -->
+        </androidx.cardview.widget.CardView>
+
+        <!-- 位置信息卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <!-- 定位状态 -->
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/textStatus"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="来源："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:text="未开始定位"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:gravity="center" />
 
+                <!-- 更新次数 -->
                 <TextView
-                    android:id="@+id/textProvider"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/textUpdateCount"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
+                    android:layout_marginTop="4dp"
+                    android:text="更新次数: 0"
+                    android:textColor="#9E9E9E"
+                    android:textSize="12sp"
+                    android:gravity="center" />
+
+                <!-- 经度 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="经度："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textLongitude"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 纬度 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="纬度："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textLatitude"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 精度 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="精度："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textAccuracy"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- 米"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 速度 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="速度："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textSpeed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- m/s"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 移动方向 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="移动方向："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textBearing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--° (GPS)"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 定位来源 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="来源："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textProvider"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- 更新时间 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="更新："
+                        android:textColor="#212121"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textUpdateTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-            <!-- 更新时间 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+        </androidx.cardview.widget.CardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="更新："
-                    android:textColor="#212121"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textUpdateTime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </androidx.cardview.widget.CardView>
-
-    <!-- 控制按钮 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnStart"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="开始定位"
-            android:layout_marginEnd="16dp" />
-
-        <Button
-            android:id="@+id/btnStop"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="停止定位"
-            android:enabled="false" />
-
-    </LinearLayout>
-
-    <!-- 诊断信息卡片 -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFF3E0"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
-
+        <!-- 控制按钮 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_margin="16dp"
+            android:orientation="horizontal"
+            android:gravity="center">
 
-            <TextView
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btnStart"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="诊断信息"
-                android:textColor="#E65100"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:text="开始定位"
+                android:layout_marginEnd="16dp" />
 
-            <TextView
-                android:id="@+id/textDiagnostic"
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btnStop"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="点击开始定位获取位置信息"
-                android:textColor="#BF360C"
-                android:textSize="12sp" />
+                android:text="停止定位"
+                android:enabled="false" />
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+        <!-- 诊断信息卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="80dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFF3E0">
 
-</LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="诊断信息"
+                    android:textColor="#E65100"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textDiagnostic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="点击开始定位获取位置信息"
+                    android:textColor="#BF360C"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+</ScrollView>
