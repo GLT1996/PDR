@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,10 @@ import java.util.concurrent.Executor
  * 应用启动时首先显示此界面，验证通过后才进入主功能
  */
 class LockActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "LockActivity"
+    }
 
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
@@ -123,6 +128,7 @@ class LockActivity : AppCompatActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
+                    Log.e(TAG, "密码验证错误: errorCode=$errorCode, msg=$errString")
                     statusText.visibility = View.VISIBLE
                     statusText.text = "密码验证错误: $errString"
                     authButton.visibility = View.VISIBLE
@@ -131,13 +137,14 @@ class LockActivity : AppCompatActivity() {
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
+                    Log.w(TAG, "密码验证失败")
                     statusText.visibility = View.VISIBLE
                     statusText.text = "密码错误，请重试"
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    // 验证成功，进入主界面
+                    Log.i(TAG, "密码验证成功！准备进入主界面")
                     statusText.visibility = View.INVISIBLE
                     navigateToMain()
                 }
@@ -197,9 +204,11 @@ class LockActivity : AppCompatActivity() {
      * 显示密码/PIN验证对话框 - 直接弹出密码输入界面
      */
     private fun showCredentialPrompt() {
+        Log.i(TAG, "showCredentialPrompt: 开始密码验证")
         // 检查是否设置了设备锁屏
         val biometricManager = BiometricManager.from(this)
         val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        Log.i(TAG, "showCredentialPrompt: canAuthenticate=$canAuthenticate")
 
         when (canAuthenticate) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
@@ -208,15 +217,19 @@ class LockActivity : AppCompatActivity() {
                 statusText.visibility = View.INVISIBLE
                 try {
                     // 使用 AUTHENTICATOR_DEVICE_CREDENTIAL 会直接显示密码输入界面
+                    Log.i(TAG, "showCredentialPrompt: 调用 credentialPrompt.authenticate")
                     credentialPrompt.authenticate(credentialPromptInfo)
                 } catch (e: Exception) {
+                    Log.e(TAG, "showCredentialPrompt: 异常 $e")
                     showNoLockDialog()
                 }
             }
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                Log.w(TAG, "showCredentialPrompt: 未设置锁屏密码")
                 showNoLockDialog()
             }
             else -> {
+                Log.w(TAG, "showCredentialPrompt: 其他错误 $canAuthenticate")
                 showNoLockDialog()
             }
         }
@@ -244,8 +257,10 @@ class LockActivity : AppCompatActivity() {
      * 验证成功后导航到主界面
      */
     private fun navigateToMain() {
+        Log.i(TAG, "navigateToMain: 开始跳转到 MainActivity")
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
+        Log.i(TAG, "navigateToMain: MainActivity 已启动，准备 finish")
         finish()
     }
 }
