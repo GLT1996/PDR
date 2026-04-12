@@ -11,13 +11,12 @@
         android:id="@+id/logoImage"
         android:layout_width="120dp"
         android:layout_height="120dp"
+        android:layout_marginTop="80dp"
         android:src="@mipmap/ic_launcher"
         android:contentDescription="应用Logo"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/titleText"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- 应用名称 -->
     <TextView
@@ -30,7 +29,6 @@
         android:textSize="28sp"
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@+id/logoImage"
-        app:layout_constraintBottom_toTopOf="@+id/subtitleText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -44,7 +42,6 @@
         android:textColor="#757575"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@+id/titleText"
-        app:layout_constraintBottom_toTopOf="@+id/authButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -53,8 +50,8 @@
         android:id="@+id/authButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_marginStart="32dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginStart="24dp"
         android:layout_marginEnd="8dp"
         android:text="指纹验证"
         android:textSize="16sp"
@@ -70,9 +67,9 @@
         android:id="@+id/credentialButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="48dp"
         android:layout_marginStart="8dp"
-        android:layout_marginEnd="32dp"
+        android:layout_marginEnd="24dp"
         android:text="使用密码"
         android:textSize="16sp"
         app:icon="@android:drawable/ic_menu_manage"
@@ -88,13 +85,12 @@
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:text=""
         android:textColor="#F44336"
         android:textSize="14sp"
         android:visibility="invisible"
         app:layout_constraintTop_toBottomOf="@+id/authButton"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
