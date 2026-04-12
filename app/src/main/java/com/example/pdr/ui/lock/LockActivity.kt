@@ -29,6 +29,7 @@ class LockActivity : AppCompatActivity() {
     private lateinit var credentialPromptInfo: BiometricPrompt.PromptInfo
 
     private lateinit var authButton: MaterialButton
+    private lateinit var credentialButton: MaterialButton
     private lateinit var statusText: TextView
 
     private val handler = Handler(Looper.getMainLooper())
@@ -39,20 +40,26 @@ class LockActivity : AppCompatActivity() {
 
         // 初始化视图
         authButton = findViewById(R.id.authButton)
+        credentialButton = findViewById(R.id.credentialButton)
         statusText = findViewById(R.id.statusText)
 
         // 初始化生物识别
         initBiometric()
 
-        // 点击按钮触发验证
+        // 指纹验证按钮
         authButton.setOnClickListener {
             showBiometricPrompt()
+        }
+
+        // 使用密码按钮
+        credentialButton.setOnClickListener {
+            showCredentialPrompt()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // 每次恢复时自动触发验证（包括首次启动）
+        // 每次恢复时自动触发指纹验证（包括首次启动）
         showBiometricPrompt()
     }
 

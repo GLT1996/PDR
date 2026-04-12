@@ -48,20 +48,41 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 验证按钮 -->
+    <!-- 指纹验证按钮 -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/authButton"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="点击验证"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="8dp"
+        android:text="指纹验证"
         android:textSize="16sp"
         app:icon="@android:drawable/ic_lock_lock"
         app:iconPadding="8dp"
         app:cornerRadius="24dp"
         app:layout_constraintTop_toBottomOf="@+id/subtitleText"
-        app:layout_constraintBottom_toTopOf="@+id/statusText"
+        app:layout_constraintBottom_toTopOf="@+id/credentialButton"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/credentialButton" />
+
+    <!-- 使用密码按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/credentialButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="32dp"
+        android:text="使用密码"
+        android:textSize="16sp"
+        app:icon="@android:drawable/ic_menu_manage"
+        app:iconPadding="8dp"
+        app:cornerRadius="24dp"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        app:layout_constraintTop_toBottomOf="@+id/subtitleText"
+        app:layout_constraintBottom_toTopOf="@+id/statusText"
+        app:layout_constraintStart_toEndOf="@+id/authButton"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- 状态提示 -->
@@ -74,7 +95,7 @@
         android:textColor="#F44336"
         android:textSize="14sp"
         android:visibility="invisible"
-        app:layout_constraintTop_toBottomOf="@+id/authButton"
+        app:layout_constraintTop_toBottomOf="@+id/credentialButton"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
