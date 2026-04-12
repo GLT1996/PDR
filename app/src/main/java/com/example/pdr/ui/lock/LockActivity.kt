@@ -157,7 +157,7 @@ class LockActivity : AppCompatActivity() {
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    Log.i(TAG, "密码验证成功！准备跳转")
+                    Log.e(TAG, "=== 密码验证成功！准备跳转 ===")  // 使用 Error 级别确保能看到
                     isAuthenticating = false
                     isAuthenticated = true
                     navigateToMain()
@@ -253,7 +253,7 @@ class LockActivity : AppCompatActivity() {
                     statusText.visibility = View.INVISIBLE
                     // 使用独立的 credentialPrompt 对象
                     credentialPrompt.authenticate(credentialPromptInfo)
-                    Log.i(TAG, "showCredentialPrompt: 密码验证已启动")
+                    Log.e(TAG, "=== showCredentialPrompt: 密码验证对话框已弹出 ===")
                 } catch (e: Exception) {
                     Log.e(TAG, "showCredentialPrompt: 异常 $e")
                     isAuthenticating = false
@@ -292,8 +292,10 @@ class LockActivity : AppCompatActivity() {
      * 验证成功后导航到主界面
      */
     private fun navigateToMain() {
-        Log.i(TAG, "navigateToMain: 跳转到 MainActivity")
+        Log.e(TAG, "=== navigateToMain: 开始跳转 MainActivity ===")
         startActivity(Intent(this, MainActivity::class.java))
+        Log.e(TAG, "=== navigateToMain: startActivity 已调用，准备 finish ===")
         finish()
+        Log.e(TAG, "=== navigateToMain: finish 已调用 ===")
     }
 }
