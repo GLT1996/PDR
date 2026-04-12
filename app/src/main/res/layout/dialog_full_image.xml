@@ -6,11 +6,10 @@
     android:gravity="center"
     android:background="#000000">
 
-    <ImageView
+    <com.example.pdr.ui.photo.ZoomableImageView
         android:id="@+id/imageViewFull"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitCenter"
         android:contentDescription="全屏照片" />
 
 </LinearLayout>

@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -17,13 +18,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.pdr.R
 import com.google.android.material.button.MaterialButton
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 class PrivatePhotoFragment : Fragment() {
 
@@ -68,17 +68,12 @@ class PrivatePhotoFragment : Fragment() {
         }
     }
 
-    // 图库选择回调
+    // 图库选择回调 - 使用 OpenDocument 获取原图
     private val galleryLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
+        ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            val success = viewModel.importFromUri(requireContext(), it)
-            if (success) {
-                Toast.makeText(requireContext(), "照片已导入", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "导入失败", Toast.LENGTH_SHORT).show()
-            }
+            importOriginalImage(it)
         }
     }
 
@@ -177,9 +172,45 @@ class PrivatePhotoFragment : Fragment() {
     }
 
     /**
-     * 打开图库
+     * 打开图库 - 使用 OpenDocument 获取原图
      */
     private fun openGallery() {
-        galleryLauncher.launch("image/*")
+        // OpenDocument 可以获取原始高质量图片
+        galleryLauncher.launch(arrayOf("image/*"))
+    }
+
+    /**
+     * 导入原图到私密目录
+     */
+    private fun importOriginalImage(sourceUri: Uri) {
+        try {
+            // 获取原图输入流
+            val inputStream: InputStream? = requireContext().contentResolver.openInputStream(sourceUri)
+            if (inputStream == null) {
+                Toast.makeText(requireContext(), "无法读取图片", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // 保存到私密目录
+            val timestamp = System.currentTimeMillis()
+            val outputFile = File(viewModel.getPrivatePhotoDir(requireContext()), "photo_$timestamp.jpg")
+
+            // 直接复制原始数据，不压缩
+            FileOutputStream(outputFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+            inputStream.close()
+
+            // 持久化权限，以便后续访问
+            requireContext().contentResolver.takePersistableUriPermission(
+                sourceUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+
+            viewModel.loadPhotos(requireContext())
+            Toast.makeText(requireContext(), "照片已导入", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 }

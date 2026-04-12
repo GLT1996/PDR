@@ -57,11 +57,11 @@ class PhotoListFragment : Fragment() {
     }
 
     /**
-     * 显示全屏图片
+     * 显示全屏图片（支持缩放）
      */
     private fun showFullImage(photoFile: java.io.File) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_full_image, null)
-        val imageView = dialogView.findViewById<ImageView>(R.id.imageViewFull)
+        val imageView = dialogView.findViewById<ZoomableImageView>(R.id.imageViewFull)
 
         val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
         imageView.setImageBitmap(bitmap)
