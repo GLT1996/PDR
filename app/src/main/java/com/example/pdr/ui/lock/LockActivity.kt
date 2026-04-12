@@ -2,8 +2,6 @@ package com.example.pdr.ui.lock
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -29,7 +27,6 @@ class LockActivity : AppCompatActivity() {
 
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
-    private lateinit var credentialPrompt: BiometricPrompt
     private lateinit var biometricPromptInfo: BiometricPrompt.PromptInfo
     private lateinit var credentialPromptInfo: BiometricPrompt.PromptInfo
 
@@ -37,11 +34,15 @@ class LockActivity : AppCompatActivity() {
     private lateinit var credentialButton: MaterialButton
     private lateinit var statusText: TextView
 
-    private val handler = Handler(Looper.getMainLooper())
+    // 验证状态标志：防止重复触发验证
+    private var isAuthenticating = false
+    // 是否已经验证通过
+    private var isAuthenticated = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lock)
+        Log.i(TAG, "onCreate: LockActivity 创建")
 
         // 初始化视图
         authButton = findViewById(R.id.authButton)
@@ -53,55 +54,68 @@ class LockActivity : AppCompatActivity() {
 
         // 指纹验证按钮
         authButton.setOnClickListener {
+            Log.i(TAG, "点击指纹验证按钮")
             showBiometricPrompt()
         }
 
-        // 使用密码按钮 - 直接调用密码验证
+        // 使用密码按钮
         credentialButton.setOnClickListener {
+            Log.i(TAG, "点击使用密码按钮")
             showCredentialPrompt()
         }
+
+        // 首次启动时自动触发指纹验证
+        showBiometricPrompt()
     }
 
     override fun onResume() {
         super.onResume()
-        // 每次恢复时自动触发指纹验证（包括首次启动）
-        showBiometricPrompt()
+        Log.i(TAG, "onResume: isAuthenticated=$isAuthenticated, isAuthenticating=$isAuthenticating")
+        // 只有在未验证且未正在验证时才触发
+        if (!isAuthenticated && !isAuthenticating) {
+            // 不在这里自动触发，让用户点击按钮
+            authButton.visibility = View.VISIBLE
+            credentialButton.visibility = View.VISIBLE
+        }
     }
 
     /**
-     * 初始化生物识别组件
+     * 初始化生物识别组件 - 使用单个 BiometricPrompt
      */
     private fun initBiometric() {
         executor = ContextCompat.getMainExecutor(this)
 
-        // 指纹验证的 BiometricPrompt
+        // 创建一个统一的 BiometricPrompt
         biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
+                    Log.e(TAG, "onAuthenticationError: errorCode=$errorCode, msg=$errString")
+                    isAuthenticating = false
+
                     statusText.visibility = View.VISIBLE
                     statusText.text = "验证错误: $errString"
 
                     when (errorCode) {
                         BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
-                            // 用户点击"使用密码"按钮，切换到密码验证
+                            // 用户点击"使用密码"按钮
+                            Log.i(TAG, "用户点击使用密码，切换到密码验证")
                             statusText.text = "请输入密码"
-                            handler.postDelayed({ showCredentialPrompt() }, 100)
+                            showCredentialPrompt()
                         }
                         BiometricPrompt.ERROR_LOCKOUT,
                         BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
-                            // 指纹失败次数过多被锁定，自动切换到密码验证
+                            Log.w(TAG, "指纹锁定，切换到密码验证")
                             statusText.text = "指纹验证已锁定，请使用密码"
-                            handler.postDelayed({ showCredentialPrompt() }, 100)
+                            showCredentialPrompt()
                         }
                         BiometricPrompt.ERROR_USER_CANCELED,
                         BiometricPrompt.ERROR_CANCELED -> {
-                            // 用户取消，显示按钮
+                            Log.i(TAG, "用户取消验证")
                             authButton.visibility = View.VISIBLE
                             credentialButton.visibility = View.VISIBLE
                         }
                         else -> {
-                            // 其他错误，显示按钮
                             authButton.visibility = View.VISIBLE
                             credentialButton.visibility = View.VISIBLE
                         }
@@ -110,47 +124,22 @@ class LockActivity : AppCompatActivity() {
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    // 验证失败（如指纹不匹配）
+                    Log.w(TAG, "onAuthenticationFailed: 验证失败")
                     statusText.visibility = View.VISIBLE
                     statusText.text = "验证失败，请重试"
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    // 验证成功，进入主界面
+                    Log.i(TAG, "onAuthenticationSucceeded: 验证成功！authenticatorType=${result.authenticationType}")
+                    isAuthenticating = false
+                    isAuthenticated = true
                     statusText.visibility = View.INVISIBLE
                     navigateToMain()
                 }
             })
 
-        // 密码验证的 BiometricPrompt（单独创建）
-        credentialPrompt = BiometricPrompt(this, executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    Log.e(TAG, "密码验证错误: errorCode=$errorCode, msg=$errString")
-                    statusText.visibility = View.VISIBLE
-                    statusText.text = "密码验证错误: $errString"
-                    authButton.visibility = View.VISIBLE
-                    credentialButton.visibility = View.VISIBLE
-                }
-
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                    Log.w(TAG, "密码验证失败")
-                    statusText.visibility = View.VISIBLE
-                    statusText.text = "密码错误，请重试"
-                }
-
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    Log.i(TAG, "密码验证成功！准备进入主界面")
-                    statusText.visibility = View.INVISIBLE
-                    navigateToMain()
-                }
-            })
-
-        // 指纹验证配置（带"使用密码"负按钮）
+        // 指纹验证配置
         biometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("身份验证")
             .setSubtitle("请使用指纹验证")
@@ -159,8 +148,7 @@ class LockActivity : AppCompatActivity() {
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
             .build()
 
-        // 密码/PIN验证配置 - 只使用设备密码，不包含生物识别
-        // 注意：使用 DEVICE_CREDENTIAL 时不能设置 NegativeButtonText
+        // 密码验证配置 - 只使用设备密码
         credentialPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("密码验证")
             .setSubtitle("请输入设备锁屏密码")
@@ -173,54 +161,64 @@ class LockActivity : AppCompatActivity() {
      * 显示指纹验证对话框
      */
     private fun showBiometricPrompt() {
-        // 先检查设备是否支持指纹
+        if (isAuthenticating || isAuthenticated) {
+            Log.i(TAG, "showBiometricPrompt: 跳过，isAuthenticating=$isAuthenticating, isAuthenticated=$isAuthenticated")
+            return
+        }
+
+        Log.i(TAG, "showBiometricPrompt: 开始指纹验证")
         val biometricManager = BiometricManager.from(this)
         val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        Log.i(TAG, "showBiometricPrompt: BIOMETRIC_WEAK canAuthenticate=$canAuthenticate")
 
         when (canAuthenticate) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 try {
+                    isAuthenticating = true
                     authButton.visibility = View.INVISIBLE
                     credentialButton.visibility = View.INVISIBLE
                     statusText.visibility = View.INVISIBLE
                     biometricPrompt.authenticate(biometricPromptInfo)
+                    Log.i(TAG, "showBiometricPrompt: authenticate 已调用")
                 } catch (e: Exception) {
-                    // 指纹不可用，直接用密码验证
+                    Log.e(TAG, "showBiometricPrompt: 异常 $e")
+                    isAuthenticating = false
                     showCredentialPrompt()
                 }
             }
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                // 未录入指纹，直接用密码验证
-                showCredentialPrompt()
-            }
             else -> {
-                // 其他错误，直接用密码验证
+                Log.i(TAG, "showBiometricPrompt: 指纹不可用，切换密码验证")
                 showCredentialPrompt()
             }
         }
     }
 
     /**
-     * 显示密码/PIN验证对话框 - 直接弹出密码输入界面
+     * 显示密码验证对话框
      */
     private fun showCredentialPrompt() {
+        if (isAuthenticating || isAuthenticated) {
+            Log.i(TAG, "showCredentialPrompt: 跳过，isAuthenticating=$isAuthenticating, isAuthenticated=$isAuthenticated")
+            return
+        }
+
         Log.i(TAG, "showCredentialPrompt: 开始密码验证")
-        // 检查是否设置了设备锁屏
         val biometricManager = BiometricManager.from(this)
         val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-        Log.i(TAG, "showCredentialPrompt: canAuthenticate=$canAuthenticate")
+        Log.i(TAG, "showCredentialPrompt: DEVICE_CREDENTIAL canAuthenticate=$canAuthenticate")
 
         when (canAuthenticate) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
-                authButton.visibility = View.INVISIBLE
-                credentialButton.visibility = View.INVISIBLE
-                statusText.visibility = View.INVISIBLE
                 try {
-                    // 使用 AUTHENTICATOR_DEVICE_CREDENTIAL 会直接显示密码输入界面
-                    Log.i(TAG, "showCredentialPrompt: 调用 credentialPrompt.authenticate")
-                    credentialPrompt.authenticate(credentialPromptInfo)
+                    isAuthenticating = true
+                    authButton.visibility = View.INVISIBLE
+                    credentialButton.visibility = View.INVISIBLE
+                    statusText.visibility = View.INVISIBLE
+                    biometricPrompt.authenticate(credentialPromptInfo)
+                    Log.i(TAG, "showCredentialPrompt: authenticate 已调用")
                 } catch (e: Exception) {
                     Log.e(TAG, "showCredentialPrompt: 异常 $e")
+                    isAuthenticating = false
                     showNoLockDialog()
                 }
             }
@@ -260,7 +258,6 @@ class LockActivity : AppCompatActivity() {
         Log.i(TAG, "navigateToMain: 开始跳转到 MainActivity")
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
-        Log.i(TAG, "navigateToMain: MainActivity 已启动，准备 finish")
         finish()
     }
 }
