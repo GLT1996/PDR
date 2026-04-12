@@ -51,7 +51,7 @@ class LockActivity : AppCompatActivity() {
             showBiometricPrompt()
         }
 
-        // 使用密码按钮
+        // 使用密码按钮 - 直接调用密码验证
         credentialButton.setOnClickListener {
             showCredentialPrompt()
         }
@@ -91,14 +91,14 @@ class LockActivity : AppCompatActivity() {
                         }
                         BiometricPrompt.ERROR_USER_CANCELED,
                         BiometricPrompt.ERROR_CANCELED -> {
-                            // 用户取消，显示重试按钮
+                            // 用户取消，显示按钮
                             authButton.visibility = View.VISIBLE
-                            authButton.text = "点击重试"
+                            credentialButton.visibility = View.VISIBLE
                         }
                         else -> {
-                            // 其他错误，显示重试按钮
+                            // 其他错误，显示按钮
                             authButton.visibility = View.VISIBLE
-                            authButton.text = "点击重试"
+                            credentialButton.visibility = View.VISIBLE
                         }
                     }
                 }
@@ -126,7 +126,7 @@ class LockActivity : AppCompatActivity() {
                     statusText.visibility = View.VISIBLE
                     statusText.text = "密码验证错误: $errString"
                     authButton.visibility = View.VISIBLE
-                    authButton.text = "点击重试"
+                    credentialButton.visibility = View.VISIBLE
                 }
 
                 override fun onAuthenticationFailed() {
@@ -143,20 +143,22 @@ class LockActivity : AppCompatActivity() {
                 }
             })
 
-        // 指纹验证配置（带"使用密码"按钮）
+        // 指纹验证配置（带"使用密码"负按钮）
         biometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("身份验证")
             .setSubtitle("请使用指纹验证")
             .setDescription("验证成功后才能使用应用功能")
             .setNegativeButtonText("使用密码")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
             .build()
 
-        // 密码/PIN验证配置
+        // 密码/PIN验证配置 - 只使用设备密码，不包含生物识别
+        // 注意：使用 DEVICE_CREDENTIAL 时不能设置 NegativeButtonText
         credentialPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("密码验证")
             .setSubtitle("请输入设备锁屏密码")
             .setDescription("验证成功后才能使用应用功能")
-            .setDeviceCredentialAllowed(true)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()
     }
 
@@ -172,6 +174,7 @@ class LockActivity : AppCompatActivity() {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 try {
                     authButton.visibility = View.INVISIBLE
+                    credentialButton.visibility = View.INVISIBLE
                     statusText.visibility = View.INVISIBLE
                     biometricPrompt.authenticate(biometricPromptInfo)
                 } catch (e: Exception) {
@@ -191,7 +194,7 @@ class LockActivity : AppCompatActivity() {
     }
 
     /**
-     * 显示密码/PIN验证对话框
+     * 显示密码/PIN验证对话框 - 直接弹出密码输入界面
      */
     private fun showCredentialPrompt() {
         // 检查是否设置了设备锁屏
@@ -201,8 +204,10 @@ class LockActivity : AppCompatActivity() {
         when (canAuthenticate) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 authButton.visibility = View.INVISIBLE
+                credentialButton.visibility = View.INVISIBLE
                 statusText.visibility = View.INVISIBLE
                 try {
+                    // 使用 AUTHENTICATOR_DEVICE_CREDENTIAL 会直接显示密码输入界面
                     credentialPrompt.authenticate(credentialPromptInfo)
                 } catch (e: Exception) {
                     showNoLockDialog()
