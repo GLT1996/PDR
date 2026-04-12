@@ -7,6 +7,8 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -25,7 +27,12 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
 
     companion object {
         private const val TAG = "LocationViewModel"
+        private const val UPDATE_INTERVAL_MS = 1000L  // 1秒更新间隔
     }
+
+    // 定时刷新Handler
+    private val handler = Handler(Looper.getMainLooper())
+    private var updateRunnable: Runnable? = null
 
     // 传感器管理
     private val sensorManager: SensorManager =
@@ -69,6 +76,9 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     private var updateCount = 0
     private val _updateCountText = MutableLiveData<String>()
     val updateCountText: LiveData<String> = _updateCountText
+
+    // 上次获取的位置（用于定时刷新显示）
+    private var lastLocation: Location? = null
 
     // 位置数据
     private val _longitude = MutableLiveData<String>()
@@ -147,11 +157,12 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
 
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            1000L  // 更新间隔：1秒
+            1000L  // 更新间隔：1秒，强制按时更新
         ).apply {
-            setMinUpdateIntervalMillis(500L)  // 最快更新间隔：0.5秒
-            setWaitForAccurateLocation(true)   // 等待高精度位置，确保持续更新
-            setMinUpdateDistanceMeters(0f)     // 距离变化为0也更新（确保移动时更新）
+            setMinUpdateIntervalMillis(1000L)  // 最快更新间隔：1秒（与主间隔一致）
+            setWaitForAccurateLocation(false)   // 不等待高精度，立即返回位置
+            setMinUpdateDistanceMeters(0f)      // 距离变化为0也更新，确保按时间刷新
+            setMaxUpdateDelayMillis(0L)         // 不延迟更新，立即回调
         }.build()
 
         try {
@@ -161,6 +172,8 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
                 getApplication<Application>().mainLooper
             ).addOnSuccessListener {
                 Log.d(TAG, "Location updates requested successfully")
+                // 启动定时刷新
+                startPeriodicRefresh()
             }.addOnFailureListener { e ->
                 Log.e(TAG, "Failed to request location updates", e)
                 _locationState.postValue(LocationState.NO_SIGNAL)
@@ -188,6 +201,9 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     fun stopLocationUpdates() {
         if (_isLocating.value != true) return
 
+        // 停止定时刷新
+        stopPeriodicRefresh()
+
         locationCallback?.let {
             fusedLocationClient.removeLocationUpdates(it)
         }
@@ -196,6 +212,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         _locationState.value = LocationState.IDLE
         _statusMessage.value = "定位已停止"
         _diagnosticInfo.value = "定位服务已停止。共获取 ${updateCount} 次位置更新"
+        lastLocation = null
     }
 
     /**
@@ -203,6 +220,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
      */
     private fun updateLocationData(location: Location) {
         Log.d(TAG, "updateLocationData: count=${updateCount + 1}, lat=${location.latitude}, lon=${location.longitude}")
+        lastLocation = location  // 保存最新位置
         updateCount++
         _updateCountText.postValue("更新次数: $updateCount")
 
@@ -272,6 +290,67 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         super.onCleared()
         stopLocationUpdates()
         stopCompass()
+        stopPeriodicRefresh()
+    }
+
+    // ========== 定时刷新机制 ==========
+
+    /**
+     * 启动定时刷新（确保每秒更新UI时间）
+     */
+    private fun startPeriodicRefresh() {
+        updateRunnable = object : Runnable {
+            override fun run() {
+                if (_isLocating.value == true) {
+                    // 每秒更新时间显示，让用户知道系统还在工作
+                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                    val currentTime = timeFormat.format(Date())
+                    _updateTime.postValue(currentTime)
+
+                    // 定期主动获取当前位置（补充GPS回调可能不及时的问题）
+                    try {
+                        fusedLocationClient.getCurrentLocation(
+                            Priority.PRIORITY_HIGH_ACCURACY,
+                            null  // 无取消令牌
+                        ).addOnSuccessListener { location ->
+                            location?.let {
+                                Log.d(TAG, "Periodic getCurrentLocation: lat=${it.latitude}, lon=${it.longitude}, acc=${it.accuracy}")
+                                // 比较位置是否有实质变化（考虑GPS精度误差）
+                                val hasChange = lastLocation == null ||
+                                    Math.abs(it.latitude - lastLocation!!.latitude) > 0.000001 ||
+                                    Math.abs(it.longitude - lastLocation!!.longitude) > 0.000001 ||
+                                    Math.abs(it.accuracy - lastLocation!!.accuracy) > 1.0
+
+                                if (hasChange) {
+                                    updateLocationData(it)
+                                } else {
+                                    Log.d(TAG, "Location unchanged, only time refreshed")
+                                }
+                            }
+                        }
+                    } catch (e: SecurityException) {
+                        Log.e(TAG, "SecurityException in periodic refresh", e)
+                    }
+
+                    // 继续下一次刷新
+                    handler.postDelayed(this, UPDATE_INTERVAL_MS)
+                }
+            }
+        }
+        // 立即执行第一次
+        handler.post(updateRunnable!!)
+        Log.d(TAG, "Periodic refresh started")
+    }
+
+    /**
+     * 停止定时刷新
+     */
+    private fun stopPeriodicRefresh() {
+        updateRunnable?.let {
+            handler.removeCallbacks(it)
+            updateRunnable = null
+            Log.d(TAG, "Periodic refresh stopped")
+        }
     }
 
     // ========== 方向传感器相关 ==========
