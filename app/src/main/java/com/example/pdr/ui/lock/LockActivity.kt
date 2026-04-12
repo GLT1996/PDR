@@ -2,6 +2,8 @@ package com.example.pdr.ui.lock
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -22,11 +24,14 @@ class LockActivity : AppCompatActivity() {
 
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var credentialPrompt: BiometricPrompt
     private lateinit var biometricPromptInfo: BiometricPrompt.PromptInfo
     private lateinit var credentialPromptInfo: BiometricPrompt.PromptInfo
 
     private lateinit var authButton: MaterialButton
     private lateinit var statusText: TextView
+
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +62,7 @@ class LockActivity : AppCompatActivity() {
     private fun initBiometric() {
         executor = ContextCompat.getMainExecutor(this)
 
+        // 指纹验证的 BiometricPrompt
         biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -67,13 +73,14 @@ class LockActivity : AppCompatActivity() {
                     when (errorCode) {
                         BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
                             // 用户点击"使用密码"按钮，切换到密码验证
-                            showCredentialPrompt()
+                            statusText.text = "请输入密码"
+                            handler.postDelayed({ showCredentialPrompt() }, 100)
                         }
                         BiometricPrompt.ERROR_LOCKOUT,
                         BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
                             // 指纹失败次数过多被锁定，自动切换到密码验证
                             statusText.text = "指纹验证已锁定，请使用密码"
-                            showCredentialPrompt()
+                            handler.postDelayed({ showCredentialPrompt() }, 100)
                         }
                         BiometricPrompt.ERROR_USER_CANCELED,
                         BiometricPrompt.ERROR_CANCELED -> {
@@ -94,6 +101,31 @@ class LockActivity : AppCompatActivity() {
                     // 验证失败（如指纹不匹配）
                     statusText.visibility = View.VISIBLE
                     statusText.text = "验证失败，请重试"
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    // 验证成功，进入主界面
+                    statusText.visibility = View.INVISIBLE
+                    navigateToMain()
+                }
+            })
+
+        // 密码验证的 BiometricPrompt（单独创建）
+        credentialPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    statusText.visibility = View.VISIBLE
+                    statusText.text = "密码验证错误: $errString"
+                    authButton.visibility = View.VISIBLE
+                    authButton.text = "点击重试"
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    statusText.visibility = View.VISIBLE
+                    statusText.text = "密码错误，请重试"
                 }
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -164,7 +196,7 @@ class LockActivity : AppCompatActivity() {
                 authButton.visibility = View.INVISIBLE
                 statusText.visibility = View.INVISIBLE
                 try {
-                    biometricPrompt.authenticate(credentialPromptInfo)
+                    credentialPrompt.authenticate(credentialPromptInfo)
                 } catch (e: Exception) {
                     showNoLockDialog()
                 }
