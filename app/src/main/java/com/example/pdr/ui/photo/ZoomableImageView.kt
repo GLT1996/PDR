@@ -19,32 +19,64 @@ class ZoomableImageView @JvmOverloads constructor(
 ) : AppCompatImageView(context, attrs, defStyleAttr) {
 
     private val matrix = Matrix()
-    private var mode = NONE
 
     // 缩放相关
-    private var minScale = 1f
-    private var maxScale = 4f
-    private var currentScale = 1f
-    private var savedScale = 1f
+    private var minScale = 1f      // 最小缩放（适应屏幕）
+    private var maxScale = 4f      // 最大缩放倍数
+    private var currentScale = 1f  // 当前缩放
+    private var baseScale = 1f     // 图片适应屏幕的基础缩放
 
     // 拖动相关
-    private var start = PointF()
-    private var mid = PointF()
+    private var lastPoint = PointF()
+    private var isDragging = false
 
-    // 边界限制
+    // 边界
     private var viewWidth = 0
     private var viewHeight = 0
     private var imageWidth = 0
     private var imageHeight = 0
 
-    companion object {
-        private const val NONE = 0
-        private const val DRAG = 1
-        private const val ZOOM = 2
-    }
+    // 缩放手势中心点
+    private var scaleCenter = PointF()
 
-    private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
-    private val gestureDetector = GestureDetector(context, GestureListener())
+    private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            scaleCenter.set(detector.focusX, detector.focusY)
+            return true
+        }
+
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            // 获取缩放因子（相对于上次）
+            val scaleFactor = detector.scaleFactor
+
+            // 计算新的缩放值
+            val newScale = currentScale * scaleFactor
+
+            // 限制在范围内
+            if (newScale >= minScale && newScale <= maxScale) {
+                currentScale = newScale
+                // 以手势中心点为基准缩放
+                matrix.postScale(scaleFactor, scaleFactor, scaleCenter.x, scaleCenter.y)
+                fixTranslation()
+                imageMatrix = matrix
+            }
+            return true
+        }
+    })
+
+    private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            // 双击切换缩放
+            if (currentScale < maxScale) {
+                // 放大到最大
+                zoomTo(maxScale, e.x, e.y)
+            } else {
+                // 缩小到最小
+                zoomTo(minScale, viewWidth / 2f, viewHeight / 2f)
+            }
+            return true
+        }
+    })
 
     init {
         scaleType = ScaleType.MATRIX
@@ -75,62 +107,64 @@ class ZoomableImageView @JvmOverloads constructor(
 
         matrix.reset()
 
-        val scale = minOf(viewWidth.toFloat() / imageWidth, viewHeight.toFloat() / imageHeight)
-        minScale = scale
-        currentScale = scale
+        // 计算适应屏幕的缩放比例
+        baseScale = minOf(viewWidth.toFloat() / imageWidth, viewHeight.toFloat() / imageHeight)
+        minScale = baseScale
+        currentScale = baseScale
 
-        matrix.postScale(scale, scale)
+        matrix.postScale(baseScale, baseScale)
 
         // 将图片居中
-        val dx = (viewWidth - imageWidth * scale) / 2f
-        val dy = (viewHeight - imageHeight * scale) / 2f
+        val dx = (viewWidth - imageWidth * baseScale) / 2f
+        val dy = (viewHeight - imageHeight * baseScale) / 2f
         matrix.postTranslate(dx, dy)
 
         imageMatrix = matrix
     }
 
+    /**
+     * 缩放到指定比例
+     */
+    private fun zoomTo(targetScale: Float, centerX: Float, centerY: Float) {
+        val scaleFactor = targetScale / currentScale
+        matrix.postScale(scaleFactor, scaleFactor, centerX, centerY)
+        currentScale = targetScale
+        fixTranslation()
+        imageMatrix = matrix
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // 先让缩放检测器处理
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
 
-        when (event.action and MotionEvent.ACTION_MASK) {
+        // 如果正在缩放，不处理拖动
+        if (scaleDetector.isInProgress) {
+            return true
+        }
+
+        when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                mode = DRAG
-                start.set(event.x, event.y)
-            }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                mode = ZOOM
-                midPoint(mid, event)
-                savedScale = currentScale
+                if (currentScale > minScale) {
+                    isDragging = true
+                    lastPoint.set(event.x, event.y)
+                }
             }
             MotionEvent.ACTION_MOVE -> {
-                if (mode == DRAG && currentScale > minScale) {
-                    val dx = event.x - start.x
-                    val dy = event.y - start.y
+                if (isDragging && currentScale > minScale) {
+                    val dx = event.x - lastPoint.x
+                    val dy = event.y - lastPoint.y
                     matrix.postTranslate(dx, dy)
                     fixTranslation()
-                    start.set(event.x, event.y)
-                } else if (mode == ZOOM) {
-                    val scaleFactor = scaleDetector.scaleFactor
-                    val newScale = savedScale * scaleFactor
-                    if (newScale >= minScale && newScale <= maxScale) {
-                        currentScale = newScale
-                        matrix.postScale(scaleFactor, scaleFactor, mid.x, mid.y)
-                        fixTranslation()
-                    }
+                    imageMatrix = matrix
+                    lastPoint.set(event.x, event.y)
                 }
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                mode = NONE
-                // 如果缩放小于最小值，恢复到初始状态
-                if (currentScale < minScale) {
-                    currentScale = minScale
-                    fitImageToView()
-                }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                isDragging = false
             }
         }
 
-        imageMatrix = matrix
         return true
     }
 
@@ -138,70 +172,47 @@ class ZoomableImageView @JvmOverloads constructor(
      * 修正边界，防止图片移出视图
      */
     private fun fixTranslation() {
+        if (imageWidth == 0 || imageHeight == 0) return
+
         val values = FloatArray(9)
         matrix.getValues(values)
 
         val transX = values[Matrix.MTRANS_X]
         val transY = values[Matrix.MTRANS_Y]
-        val scale = values[Matrix.MSCALE_X]
 
-        val scaledWidth = imageWidth * scale
-        val scaledHeight = imageHeight * scale
+        val scaledWidth = imageWidth * currentScale
+        val scaledHeight = imageHeight * currentScale
 
         // 计算允许的移动范围
-        val minX = viewWidth - scaledWidth
-        val maxX = 0f
-        val minY = viewHeight - scaledHeight
-        val maxY = 0f
+        val minX: Float
+        val maxX: Float
+        val minY: Float
+        val maxY: Float
 
-        // 修正X位置
-        var newX = transX
         if (scaledWidth > viewWidth) {
-            newX = Math.max(minX, Math.min(maxX, transX))
+            // 图片比视图宽，可以左右拖动
+            minX = viewWidth - scaledWidth
+            maxX = 0f
         } else {
-            newX = (viewWidth - scaledWidth) / 2f
+            // 图片比视图窄，固定居中
+            minX = (viewWidth - scaledWidth) / 2f
+            maxX = minX
         }
 
-        // 修正Y位置
-        var newY = transY
         if (scaledHeight > viewHeight) {
-            newY = Math.max(minY, Math.min(maxY, transY))
+            minY = viewHeight - scaledHeight
+            maxY = 0f
         } else {
-            newY = (viewHeight - scaledHeight) / 2f
+            minY = (viewHeight - scaledHeight) / 2f
+            maxY = minY
         }
+
+        // 修正位置
+        val newX = transX.coerceIn(minX, maxX)
+        val newY = transY.coerceIn(minY, maxY)
 
         values[Matrix.MTRANS_X] = newX
         values[Matrix.MTRANS_Y] = newY
         matrix.setValues(values)
-    }
-
-    /**
-     * 计算双指中点
-     */
-    private fun midPoint(point: PointF, event: MotionEvent) {
-        val x = (event.getX(0) + event.getX(1)) / 2f
-        val y = (event.getY(0) + event.getY(1)) / 2f
-        point.set(x, y)
-    }
-
-    private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScaleEnd(detector: ScaleGestureDetector) {
-            super.onScaleEnd(detector)
-        }
-    }
-
-    private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
-        override fun onDoubleTap(e: MotionEvent): Boolean {
-            // 双击切换缩放
-            if (currentScale < maxScale) {
-                currentScale = maxScale
-                matrix.postScale(maxScale / currentScale, maxScale / currentScale, viewWidth / 2f, viewHeight / 2f)
-            } else {
-                currentScale = minScale
-                fitImageToView()
-            }
-            imageMatrix = matrix
-            return true
-        }
     }
 }
