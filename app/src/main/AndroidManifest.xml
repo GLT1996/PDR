@@ -70,20 +70,27 @@
         <!-- ==================== Activity组件 ==================== -->
         <!-- Activity: Android四大组件之一，代表一个用户界面屏幕
              android:exported="true" - 允许外部应用启动此Activity(启动入口必须为true) -->
+
+        <!-- 锁屏验证Activity (应用启动入口) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.lock.LockActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.PDR">
 
-            <!-- intent-filter: 意图过滤器，定义组件能响应的隐式Intent -->
+            <!-- 启动入口 -->
             <intent-filter>
-                <!-- MAIN + LAUNCHER 组合: 标识此为应用的主入口Activity
-                     点击桌面图标时系统会启动此Activity -->
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 主Activity (验证成功后进入) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.PDR" />
 
         <!-- ==================== Service组件 ==================== -->
         <!-- Service: Android四大组件之一，无界面的后台运行组件

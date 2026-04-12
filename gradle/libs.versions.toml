@@ -13,6 +13,7 @@ junitExt = "1.1.5"
 espressoCore = "3.5.1"
 activityKtx = "1.8.2"
 fragmentKtx = "1.6.2"
+biometric = "1.2.0-alpha05"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +33,9 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 # Activity & Fragment
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+
+# Biometric
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 
 # Room Database
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

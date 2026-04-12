@@ -63,6 +63,9 @@ dependencies {
     // Google Play Services Location (GPS定位)
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    // Biometric (指纹/PIN验证)
+    implementation(libs.androidx.biometric)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
