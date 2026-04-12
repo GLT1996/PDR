@@ -58,9 +58,10 @@ class LockActivity : AppCompatActivity() {
             showBiometricPrompt()
         }
 
-        // 使用密码按钮
+        // 使用密码按钮 - 强制切换到密码验证（即使指纹验证正在进行）
         credentialButton.setOnClickListener {
-            Log.i(TAG, "点击使用密码按钮")
+            Log.i(TAG, "点击使用密码按钮，强制切换到密码验证")
+            isAuthenticating = false  // 重置状态，允许启动密码验证
             showCredentialPrompt()
         }
 
@@ -203,6 +204,15 @@ class LockActivity : AppCompatActivity() {
         }
 
         Log.i(TAG, "showCredentialPrompt: 开始密码验证")
+
+        // 先取消任何正在进行的验证
+        try {
+            biometricPrompt.cancelAuthentication()
+            Log.i(TAG, "showCredentialPrompt: 已取消之前的验证")
+        } catch (e: Exception) {
+            Log.w(TAG, "showCredentialPrompt: 取消验证失败 $e")
+        }
+
         val biometricManager = BiometricManager.from(this)
         val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
         Log.i(TAG, "showCredentialPrompt: DEVICE_CREDENTIAL canAuthenticate=$canAuthenticate")
