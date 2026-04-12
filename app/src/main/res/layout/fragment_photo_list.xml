@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:background="#FAFAFA">
 
-    <!-- 顶部标题栏 -->
+    <!-- 顶部标题栏（正常模式） -->
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
@@ -15,15 +15,95 @@
         android:background="#FFFFFF"
         android:elevation="4dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="16dp"
-            android:text="私密照片列表"
-            android:textColor="#212121"
-            android:textSize="24sp"
-            android:textStyle="bold"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:text="私密照片列表"
+                android:textColor="#212121"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- 批量删除按钮 -->
+            <ImageView
+                android:id="@+id/btnBatchDelete"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="批量删除"
+                android:tint="#757575" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 顶部工具栏（批量选择模式） -->
+    <LinearLayout
+        android:id="@+id/batchToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#FF5722"
+        android:elevation="4dp"
+        android:padding="8dp"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <!-- 取消按钮 -->
+        <ImageView
+            android:id="@+id/btnCancelBatch"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="取消"
+            android:tint="#FFFFFF" />
+
+        <!-- 选中数量 -->
+        <TextView
+            android:id="@+id/tvSelectedCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:text="已选择 0 张"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
             android:gravity="center" />
+
+        <!-- 全选按钮 -->
+        <ImageView
+            android:id="@+id/btnSelectAll"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_agenda"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="全选"
+            android:tint="#FFFFFF" />
+
+        <!-- 删除按钮 -->
+        <ImageView
+            android:id="@+id/btnConfirmDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="删除选中"
+            android:tint="#FFFFFF" />
 
     </LinearLayout>
 

@@ -91,4 +91,23 @@ class PrivatePhotoViewModel : ViewModel() {
             return false
         }
     }
+
+    /**
+     * 批量删除照片
+     */
+    fun deletePhotos(context: Context, photoFiles: List<File>): Int {
+        var deletedCount = 0
+        try {
+            for (photoFile in photoFiles) {
+                if (photoFile.exists()) {
+                    photoFile.delete()
+                    deletedCount++
+                }
+            }
+            loadPhotos(context)
+            return deletedCount
+        } catch (e: Exception) {
+            return deletedCount
+        }
+    }
 }

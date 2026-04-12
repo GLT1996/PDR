@@ -7,11 +7,36 @@
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true">
 
-    <ImageView
-        android:id="@+id/imageViewPhoto"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="私密照片" />
+        android:layout_height="150dp">
+
+        <ImageView
+            android:id="@+id/imageViewPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="私密照片" />
+
+        <!-- 选择状态覆盖层 -->
+        <FrameLayout
+            android:id="@+id/selectionOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#80000000"
+            android:visibility="gone">
+
+            <!-- 勾选标记 -->
+            <ImageView
+                android:id="@+id/checkMark"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="#FFFFFF" />
+
+        </FrameLayout>
+
+    </FrameLayout>
 
 </androidx.cardview.widget.CardView>
