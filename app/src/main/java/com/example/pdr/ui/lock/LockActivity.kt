@@ -64,14 +64,28 @@ class LockActivity : AppCompatActivity() {
                     statusText.visibility = View.VISIBLE
                     statusText.text = "验证错误: $errString"
 
-                    // 用户点击"使用密码"按钮时，切换到密码验证
-                    if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
-                        showCredentialPrompt()
-                    } else if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
-                               errorCode == BiometricPrompt.ERROR_CANCELED) {
-                        // 用户取消，显示重试按钮
-                        authButton.visibility = View.VISIBLE
-                        authButton.text = "点击重试"
+                    when (errorCode) {
+                        BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
+                            // 用户点击"使用密码"按钮，切换到密码验证
+                            showCredentialPrompt()
+                        }
+                        BiometricPrompt.ERROR_LOCKOUT,
+                        BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> {
+                            // 指纹失败次数过多被锁定，自动切换到密码验证
+                            statusText.text = "指纹验证已锁定，请使用密码"
+                            showCredentialPrompt()
+                        }
+                        BiometricPrompt.ERROR_USER_CANCELED,
+                        BiometricPrompt.ERROR_CANCELED -> {
+                            // 用户取消，显示重试按钮
+                            authButton.visibility = View.VISIBLE
+                            authButton.text = "点击重试"
+                        }
+                        else -> {
+                            // 其他错误，显示重试按钮
+                            authButton.visibility = View.VISIBLE
+                            authButton.text = "点击重试"
+                        }
                     }
                 }
 
