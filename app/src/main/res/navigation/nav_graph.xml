@@ -18,6 +18,9 @@
         <action
             android:id="@+id/action_home_to_location"
             app:destination="@id/locationFragment" />
+        <action
+            android:id="@+id/action_home_to_private_photo"
+            app:destination="@id/privatePhotoFragment" />
     </fragment>
 
     <!-- GPS 定位页面 -->
@@ -55,5 +58,21 @@
             android:id="@+id/action_history_to_main"
             app:destination="@id/mainFragment" />
     </fragment>
+
+    <!-- 私密照片页面 -->
+    <fragment
+        android:id="@+id/privatePhotoFragment"
+        android:name="com.example.pdr.ui.photo.PrivatePhotoFragment"
+        android:label="私密照片">
+        <action
+            android:id="@+id/action_private_to_list"
+            app:destination="@id/photoListFragment" />
+    </fragment>
+
+    <!-- 图片列表页面 -->
+    <fragment
+        android:id="@+id/photoListFragment"
+        android:name="com.example.pdr.ui.photo.PhotoListFragment"
+        android:label="图片列表" />
 
 </navigation>

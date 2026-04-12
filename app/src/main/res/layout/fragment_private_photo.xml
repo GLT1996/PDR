@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FAFAFA">
+
+    <!-- 顶部标题栏 -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:elevation="4dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="私密照片"
+            android:textColor="#212121"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- 功能按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
+
+        <!-- 生成照片按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="生成照片"
+            android:textSize="18sp"
+            android:padding="16dp"
+            app:icon="@android:drawable/ic_menu_camera"
+            app:iconGravity="textStart"
+            app:iconPadding="16dp"
+            app:cornerRadius="24dp" />
+
+        <!-- 查看图片按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnViewPhotos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="查看图片"
+            android:textSize="18sp"
+            android:padding="16dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:icon="@android:drawable/ic_menu_gallery"
+            app:iconGravity="textStart"
+            app:iconPadding="16dp"
+            app:cornerRadius="24dp" />
+
+        <!-- 提示信息 -->
+        <TextView
+            android:id="@+id/tvPhotoCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="已保存 0 张私密照片"
+            android:textColor="#757575"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

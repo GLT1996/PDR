@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 私密照片存储目录（应用私有目录，系统图库无法扫描） -->
+    <files-path name="private_photos" path="private_photos/" />
+    <!-- 相机临时文件 -->
+    <files-path name="camera_temp" path="." />
+</paths>

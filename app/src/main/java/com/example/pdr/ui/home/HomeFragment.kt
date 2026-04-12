@@ -52,5 +52,10 @@ class HomeFragment : Fragment() {
         rootView.findViewById<View>(R.id.cardLocation).setOnClickListener {
             findNavController().navigate(R.id.action_home_to_location)
         }
+
+        // 私密照片卡片点击
+        rootView.findViewById<View>(R.id.cardPrivatePhoto).setOnClickListener {
+            findNavController().navigate(R.id.action_home_to_private_photo)
+        }
     }
 }
