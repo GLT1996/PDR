@@ -134,6 +134,25 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // 处理多点触控：阻止 ViewPager2 拦截事件，以便支持缩放
+        when (event.actionMasked) {
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // 多点触控开始（双指按下），请求父容器不要拦截事件
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                // 多点触控结束（其中一指抬起），允许父容器拦截事件
+                // 但如果还有其他手指按下，继续保持禁止拦截
+                if (event.pointerCount <= 1) {
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                // 所有手指抬起或事件取消，恢复父容器拦截
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+
         // 先让缩放检测器处理
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
@@ -148,6 +167,8 @@ class ZoomableImageView @JvmOverloads constructor(
                 if (currentScale > minScale) {
                     isDragging = true
                     lastPoint.set(event.x, event.y)
+                    // 拖动时也阻止父容器拦截
+                    parent?.requestDisallowInterceptTouchEvent(true)
                 }
             }
             MotionEvent.ACTION_MOVE -> {
