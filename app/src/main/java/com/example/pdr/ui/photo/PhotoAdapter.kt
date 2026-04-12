@@ -10,7 +10,7 @@ import com.example.pdr.R
 import java.io.File
 
 class PhotoAdapter(
-    private val onItemClick: (File) -> Unit,
+    private val onItemClick: (File, Int) -> Unit,
     private val onItemLongClick: (File) -> Unit
 ) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
@@ -29,7 +29,7 @@ class PhotoAdapter(
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         val photoFile = photos[position]
-        holder.bind(photoFile)
+        holder.bind(photoFile, position)
     }
 
     override fun getItemCount(): Int = photos.size
@@ -37,12 +37,12 @@ class PhotoAdapter(
     inner class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val imageView: ImageView = itemView.findViewById(R.id.imageViewPhoto)
 
-        fun bind(photoFile: File) {
+        fun bind(photoFile: File, position: Int) {
             val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
             imageView.setImageBitmap(bitmap)
 
             itemView.setOnClickListener {
-                onItemClick(photoFile)
+                onItemClick(photoFile, position)
             }
 
             itemView.setOnLongClickListener {

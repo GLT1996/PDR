@@ -1,12 +1,10 @@
 package com.example.pdr.ui.photo
 
 import android.app.AlertDialog
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
@@ -40,7 +38,7 @@ class PhotoListFragment : Fragment() {
 
         // 创建适配器
         adapter = PhotoAdapter(
-            onItemClick = { photoFile -> showFullImage(photoFile) },
+            onItemClick = { photoFile, position -> showFullImage(position) },
             onItemLongClick = { photoFile -> showDeleteDialog(photoFile) }
         )
         recyclerView.adapter = adapter
@@ -57,20 +55,13 @@ class PhotoListFragment : Fragment() {
     }
 
     /**
-     * 显示全屏图片（支持缩放）
+     * 显示全屏图片（支持左右滑动切换）
      */
-    private fun showFullImage(photoFile: java.io.File) {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_full_image, null)
-        val imageView = dialogView.findViewById<ZoomableImageView>(R.id.imageViewFull)
+    private fun showFullImage(position: Int) {
+        val photos = viewModel.photoList.value ?: emptyList()
+        if (photos.isEmpty()) return
 
-        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
-        imageView.setImageBitmap(bitmap)
-
-        AlertDialog.Builder(requireContext())
-            .setView(dialogView)
-            .setPositiveButton("关闭", null)
-            .create()
-            .show()
+        PhotoViewerActivity.start(requireContext(), photos, position)
     }
 
     /**

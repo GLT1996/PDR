@@ -105,6 +105,13 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.PDR" />
 
+        <!-- 照片查看Activity (支持左右滑动) -->
+        <activity
+            android:name=".ui.photo.PhotoViewerActivity"
+            android:exported="false"
+            android:label="照片查看"
+            android:theme="@style/Theme.PDR" />
+
         <!-- ==================== Service组件 ==================== -->
         <!-- Service: Android四大组件之一，无界面的后台运行组件
              android:enabled="true" - 服务是否可被系统实例化
